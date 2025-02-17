@@ -12,8 +12,7 @@ declare_id!("6irtasT64kUUv3558PXTcg3BUWLgWXjx2efQJXMEz2UE");
 pub mod task_token {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
-        msg!("Greetings from: {:?}", ctx.program_id);
-        Ok(())
+    pub fn initialize(ctx: Context<Initialize>, fee: u16) -> Result<()> {
+        ctx.accounts.initialize(fee, ctx.bumps)
     }
 }
