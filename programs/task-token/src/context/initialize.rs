@@ -25,11 +25,11 @@ pub struct Initialize<'info> {
     #[account(
       init,
       payer = admin,
+      seeds = [b"rewards", config.key().as_ref()],
+      bump,
       mint::decimals = 6,
       mint::authority = config,
       mint::freeze_authority = config,
-      seeds = [b"rewards", config.key().as_ref()],
-      bump
     )]
     pub mint: InterfaceAccount<'info, Mint>,
     pub token_program: Interface<'info, TokenInterface>,
