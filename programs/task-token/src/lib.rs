@@ -31,4 +31,8 @@ pub mod task_token {
     pub fn submit_task(ctx: Context<SubmitTask>, link: String, _task_id: u64) -> Result<()> {
         ctx.accounts.submit_task(link, ctx.bumps)
     }
+
+    pub fn close_task(ctx: Context<CloseTask>) -> Result<()> {
+        Ok(())
+    }
 }

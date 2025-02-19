@@ -6,3 +6,6 @@ pub use create_task::*;
 
 pub mod submit_task;
 pub use submit_task::*;
+
+pub mod close_task;
+pub use close_task::*;
