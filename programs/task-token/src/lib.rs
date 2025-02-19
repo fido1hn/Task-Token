@@ -15,4 +15,15 @@ pub mod task_token {
     pub fn initialize(ctx: Context<Initialize>, fee: u16) -> Result<()> {
         ctx.accounts.initialize(fee, ctx.bumps)
     }
+
+    pub fn create_task(
+        ctx: Context<CreateTask>,
+        title: String,
+        description: String,
+        pay: u64,
+        deadline: i64,
+    ) -> Result<()> {
+        ctx.accounts
+            .create_task(title, description, pay, deadline, ctx.bumps)
+    }
 }
