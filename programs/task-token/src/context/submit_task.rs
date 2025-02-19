@@ -3,12 +3,11 @@ use anchor_lang::prelude::*;
 use crate::{state::Task, Submission};
 
 #[derive(Accounts)]
-#[instruction(task_id: u16)]
 pub struct SubmitTask<'info> {
     #[account(mut)]
     pub developer: Signer<'info>,
     #[account(
-      seeds = [b"task", task_id.to_le_bytes().as_ref(), task.owner.key().as_ref()],
+      seeds = [b"task", task.title.as_bytes(), task.owner.key().as_ref()],
       bump
     )]
     pub task: Account<'info, Task>,

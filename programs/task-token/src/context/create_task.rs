@@ -7,7 +7,7 @@ use std::{env, str::FromStr};
 use crate::state::{Config, Task};
 
 #[derive(Accounts)]
-#[instruction(task_id: u16)]
+#[instruction(title: String)]
 pub struct CreateTask<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -31,7 +31,7 @@ pub struct CreateTask<'info> {
       init,
       payer = owner,
       space = 8 + Task::INIT_SPACE,
-      seeds = [b"task", task_id.to_le_bytes().as_ref(), owner.key().as_ref()],
+      seeds = [b"task", title.as_bytes(), owner.key().as_ref()],
       bump
     )]
     pub task: Account<'info, Task>,

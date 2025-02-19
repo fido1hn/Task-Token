@@ -22,13 +22,12 @@ pub mod task_token {
         description: String,
         pay: u64,
         deadline: i64,
-        _task_id: u64,
     ) -> Result<()> {
         ctx.accounts
             .create_task(title, description, pay, deadline, ctx.bumps)
     }
 
-    pub fn submit_task(ctx: Context<SubmitTask>, link: String, _task_id: u64) -> Result<()> {
+    pub fn submit_task(ctx: Context<SubmitTask>, link: String) -> Result<()> {
         ctx.accounts.submit_task(link, ctx.bumps)
     }
 
