@@ -1,5 +1,5 @@
-use anchor_lang::prelude::*;
-use anchor_spl::{associated_token::AssociatedToken, token_interface::{Mint, TokenAccount, TokenInterface}};
+use anchor_lang::{prelude::*, system_program::{Transfer, transfer}};
+use anchor_spl::{associated_token::AssociatedToken, token_interface::{Mint, TokenAccount, TokenInterface, TransferChecked, transfer_checked}};
 use dotenv::dotenv;
 use solana_program::pubkey::Pubkey as ProgramPubkey;
 use std::{env, str::FromStr};
@@ -66,8 +66,20 @@ impl<'info> CreateTask<'info> {
     ) -> Result<()> {
         // Check payment >= $20
         require_gte!(pay, 20);
+
         // Transfer to the config vault
+        let cpi_program = self.system_program.to_account_info();
+        let cpi_accounts = Transfer { from: self.owner.to_account_info(), to: self.fee_vault.to_account_info() };
+        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+        let listing_fee = 30_000_000;
+        transfer(cpi_ctx, listing_fee)?;
+
         // Transfer to the task vault
+        let cpi_program = self.token_program.to_account_info();
+        let cpi_accounts = TransferChecked { from: self.owner_pay_mint_ata.to_account_info(), mint: self.pay_mint.to_account_info(), to: self.task_vault.to_account_info(), authority: self.owner.to_account_info() };
+        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+        transfer_checked(cpi_ctx, pay, 6)?;
+
         self.task.set_inner(Task {
             title,
             description,
