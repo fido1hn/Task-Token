@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
-// use solana_program::pubkey::Pubkey;
-// use std::str::FromStr;
+use anchor_spl::{associated_token::AssociatedToken, token_interface::{Mint, TokenAccount, TokenInterface}};
+use dotenv::dotenv;
+use solana_program::pubkey::Pubkey as ProgramPubkey;
+use std::{env, str::FromStr};
 
 use crate::state::{Config, Task};
 
@@ -15,7 +16,17 @@ pub struct CreateTask<'info> {
       bump = config.config_bump
     )]
     pub config: Account<'info, Config>,
+    #[account(
+      address = get_mint_address()
+    )]
     pub pay_mint: InterfaceAccount<'info, Mint>,
+    #[account(
+      init_if_needed,
+      payer = owner, 
+      associated_token::mint = pay_mint,
+      associated_token::authority = owner,
+    )]
+    pub owner_pay_mint_ata: InterfaceAccount<'info, TokenAccount>,
     #[account(
       init,
       payer = owner,
@@ -40,5 +51,39 @@ pub struct CreateTask<'info> {
     )]
     pub fee_vault: SystemAccount<'info>,
     pub token_program: Interface<'info, TokenInterface>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
+}
+
+impl<'info> CreateTask<'info> {
+    pub fn create_task(
+        &mut self,
+        title: String,
+        description: String,
+        pay: u64,
+        deadline: i64,
+        bumps: CreateTaskBumps,
+    ) -> Result<()> {
+        // Check payment >= $20
+        require_gte!(pay, 20);
+        // Transfer to the config vault
+        // Transfer to the task vault
+        self.task.set_inner(Task {
+            title,
+            description,
+            deadline,
+            pay,
+            submissions: Vec::new(),
+            owner: self.owner.key(),
+            task_vault_bump: bumps.task_vault,
+            task_bump: bumps.task,
+        });
+        Ok(())
+    }
+}
+
+fn get_mint_address() -> ProgramPubkey {
+  dotenv().ok();
+  let mint_address = env::var("PAY_MINT_ADDRESS").expect("PAY_MINT_ADDRESS must be set");
+  ProgramPubkey::from_str(&mint_address).expect("Invalid MINT_ADDRESS")
 }

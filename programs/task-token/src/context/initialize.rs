@@ -17,7 +17,6 @@ pub struct Initialize<'info> {
     )]
     pub config: Account<'info, Config>,
     #[account(
-      mut,
       seeds = [b"config", config.key().as_ref()],
       bump
     )]
