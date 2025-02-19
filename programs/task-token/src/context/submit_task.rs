@@ -24,9 +24,18 @@ pub struct SubmitTask<'info> {
 }
 
 impl<'info> SubmitTask<'info> {
-    pub fn submit_task(&mut self) -> Result<()> {
+    pub fn submit_task(&mut self, link: String, bumps: SubmitTaskBumps) -> Result<()> {
         // Create a submission account
-        // Add submission account pubkey to the task submission field vector
+        self.submission.set_inner(Submission {
+            task: self.task.key(),
+            developer: self.developer.key(),
+            submission_link: link,
+            bump: bumps.submission,
+        });
+        // Add submission account pubkey to the task submission vector field
+        self.task
+            .submissions
+            .extend_from_slice(&[self.submission.key()]);
 
         Ok(())
     }

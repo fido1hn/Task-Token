@@ -7,6 +7,5 @@ pub struct Submission {
     pub developer: Pubkey,
     #[max_len(50)]
     pub submission_link: String,
-    pub submitted_at: i64,
     pub bump: u8,
 }
