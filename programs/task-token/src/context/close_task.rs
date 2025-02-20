@@ -85,7 +85,18 @@ impl<'info> CloseTask<'info> {
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
 
         transfer_checked(cpi_ctx, self.task_vault.amount, 6)?;
+
         // emit the task completed event
+        emit!(TaskCompleted {
+            task: self.task.key(),
+            description: self.task.description.to_string(),
+            submission: self.submission.submission_link.to_string(),
+            difficulty: self.task.difficulty,
+            developer: self.developer.key(),
+            task_owner: self.task.owner.key(),
+            closed_at: Clock::get()?.unix_timestamp
+        });
+
         // close all submission accounts
         Ok(())
     }
@@ -102,4 +113,8 @@ pub struct TaskCompleted {
     pub task: Pubkey,
     pub description: String,
     pub submission: String,
+    pub difficulty: u8,
+    pub developer: Pubkey,
+    pub task_owner: Pubkey,
+    pub closed_at: i64,
 }
