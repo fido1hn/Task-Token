@@ -4,7 +4,7 @@ use dotenv::dotenv;
 use solana_program::pubkey::Pubkey as ProgramPubkey;
 use std::{env, str::FromStr};
 
-use crate::state::{Config, Task};
+use crate::{errors::CustomError, state::{Config, Task}};
 
 #[derive(Accounts)]
 #[instruction(title: String)]
@@ -62,8 +62,11 @@ impl<'info> CreateTask<'info> {
         description: String,
         pay: u64,
         deadline: i64,
+        difficulty: u8,
         bumps: CreateTaskBumps,
     ) -> Result<()> {
+        // Validate difficulty
+        require!(difficulty <= 2, CustomError::InvalidDifficulty);
         // Check payment >= $20
         require_gte!(pay, 20);
 
@@ -85,6 +88,7 @@ impl<'info> CreateTask<'info> {
             description,
             deadline,
             pay,
+            difficulty,
             submissions: Vec::new(),
             owner: self.owner.key(),
             task_vault_bump: bumps.task_vault,

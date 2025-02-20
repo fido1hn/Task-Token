@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{Mint, TokenAccount, TokenInterface},
+    token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
 use dotenv::dotenv;
 use solana_program::pubkey::Pubkey as ProgramPubkey;
@@ -13,6 +13,7 @@ use crate::state::{Config, Submission, Task};
 pub struct CloseTask<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
+    pub developer: SystemAccount<'info>,
     #[account(
       seeds = [b"config", config.admin.key().as_ref()],
       bump = config.config_bump
@@ -28,9 +29,27 @@ pub struct CloseTask<'info> {
       bump
     )]
     pub submission: Account<'info, Submission>,
+    // task vault
+    #[account(
+      seeds = [b"task_vault", task.key().as_ref()],
+      bump = task.task_bump
+    )]
+    pub task_vault: InterfaceAccount<'info, TokenAccount>,
     // developer pay ata
+    #[account(
+      init_if_needed,
+      payer = signer,
+      associated_token::mint = pay_mint,
+      associated_token::authority = developer
+    )]
     pub developer_pay_ata: InterfaceAccount<'info, TokenAccount>,
     // developer rewards ata
+    #[account(
+      init_if_needed,
+      payer = signer,
+      associated_token::mint = task_token_mint,
+      associated_token::authority = developer
+    )]
     pub developer_task_token_ata: InterfaceAccount<'info, TokenAccount>,
     // rewards mint
     #[account(
@@ -46,8 +65,41 @@ pub struct CloseTask<'info> {
     pub system_program: Program<'info, System>,
 }
 
+impl<'info> CloseTask<'info> {
+    pub fn close_task(&mut self) -> Result<()> {
+        // check project owner is signer
+        require_eq!(self.signer.key(), self.task.owner.key());
+        // send fee from vault to developer
+        let cpi_program = self.token_program.to_account_info();
+        let cpi_accounts = TransferChecked {
+            from: self.task_vault.to_account_info(),
+            mint: self.pay_mint.to_account_info(),
+            to: self.developer_pay_ata.to_account_info(),
+            authority: self.config.to_account_info(),
+        };
+
+        let binding = self.config.admin.key();
+        let seeds = &[b"config", binding.as_ref()];
+        let signer_seeds = &[&seeds[..]];
+
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+
+        transfer_checked(cpi_ctx, self.task_vault.amount, 6)?;
+        // emit the task completed event
+        // close all submission accounts
+        Ok(())
+    }
+}
+
 fn get_mint_address() -> ProgramPubkey {
     dotenv().ok();
     let mint_address = env::var("PAY_MINT_ADDRESS").expect("PAY_MINT_ADDRESS must be set");
     ProgramPubkey::from_str(&mint_address).expect("Invalid MINT_ADDRESS")
+}
+
+#[event]
+pub struct TaskCompleted {
+    pub task: Pubkey,
+    pub description: String,
+    pub submission: String,
 }

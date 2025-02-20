@@ -6,6 +6,8 @@ pub use context::*;
 pub mod state;
 pub use state::*;
 
+pub mod errors;
+
 declare_id!("6irtasT64kUUv3558PXTcg3BUWLgWXjx2efQJXMEz2UE");
 
 #[program]
@@ -22,9 +24,10 @@ pub mod task_token {
         description: String,
         pay: u64,
         deadline: i64,
+        difficulty: u8,
     ) -> Result<()> {
         ctx.accounts
-            .create_task(title, description, pay, deadline, ctx.bumps)
+            .create_task(title, description, pay, deadline, difficulty, ctx.bumps)
     }
 
     pub fn submit_task(ctx: Context<SubmitTask>, link: String) -> Result<()> {

@@ -7,6 +7,7 @@ pub struct Task {
     pub title: String,
     #[max_len(50)]
     pub description: String,
+    pub difficulty: u8,
     pub deadline: i64,
     #[max_len(100)]
     pub submissions: Vec<Pubkey>,
