@@ -1,7 +1,9 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
+    token_interface::{
+        mint_to, transfer_checked, Mint, MintTo, TokenAccount, TokenInterface, TransferChecked,
+    },
 };
 use dotenv::dotenv;
 use solana_program::pubkey::Pubkey as ProgramPubkey;
@@ -69,6 +71,7 @@ impl<'info> CloseTask<'info> {
     pub fn close_task(&mut self) -> Result<()> {
         // check project owner is signer
         require_eq!(self.signer.key(), self.task.owner.key());
+
         // send fee from vault to developer
         let cpi_program = self.token_program.to_account_info();
         let cpi_accounts = TransferChecked {
@@ -85,6 +88,22 @@ impl<'info> CloseTask<'info> {
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
 
         transfer_checked(cpi_ctx, self.task_vault.amount, 6)?;
+
+        // Mint task tokens to developer
+        let cpi_program = self.token_program.to_account_info();
+        let cpi_accounts = MintTo {
+            mint: self.task_token_mint.to_account_info(),
+            to: self.developer_task_token_ata.to_account_info(),
+            authority: self.config.to_account_info(),
+        };
+
+        let binding = self.config.admin.key();
+        let seeds = &[b"config", binding.as_ref()];
+        let signer_seeds = &[&seeds[..]];
+
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+
+        mint_to(cpi_ctx, amount);
 
         // emit the task completed event
         emit!(TaskCompleted {
