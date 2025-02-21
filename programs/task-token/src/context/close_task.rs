@@ -22,19 +22,24 @@ pub struct CloseTask<'info> {
     )]
     pub config: Account<'info, Config>,
     #[account(
+      mut,
       seeds = [b"task", task.title.as_bytes(), task.owner.key().as_ref()],
-      bump
+      bump = task.task_bump,
+      close = signer
     )]
     pub task: Account<'info, Task>,
     #[account(
+      mut,
       seeds = [b"submission", submission.developer.as_ref(), task.key().as_ref()],
-      bump
+      bump = submission.bump,
+      close = signer
     )]
     pub submission: Account<'info, Submission>,
     // task vault
     #[account(
+      mut,
       seeds = [b"task_vault", task.key().as_ref()],
-      bump = task.task_bump
+      bump = task.task_bump,
     )]
     pub task_vault: InterfaceAccount<'info, TokenAccount>,
     // developer pay ata
@@ -103,7 +108,14 @@ impl<'info> CloseTask<'info> {
 
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
 
-        mint_to(cpi_ctx, amount);
+        let amount = match self.task.difficulty {
+            0 => 1_000_000,
+            1 => 2_000_000,
+            2 => 3_000_000,
+            _ => 0, // handle other values
+        };
+
+        mint_to(cpi_ctx, amount)?;
 
         // emit the task completed event
         emit!(TaskCompleted {
@@ -117,6 +129,9 @@ impl<'info> CloseTask<'info> {
         });
 
         // close all submission accounts
+
+        // close task account
+
         Ok(())
     }
 }
