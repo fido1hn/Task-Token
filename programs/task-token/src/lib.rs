@@ -35,6 +35,6 @@ pub mod task_token {
     }
 
     pub fn close_task(ctx: Context<CloseTask>) -> Result<()> {
-        Ok(())
+        ctx.accounts.close_task()
     }
 }

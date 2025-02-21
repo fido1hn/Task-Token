@@ -128,10 +128,6 @@ impl<'info> CloseTask<'info> {
             closed_at: Clock::get()?.unix_timestamp
         });
 
-        // close all submission accounts
-
-        // close task account
-
         Ok(())
     }
 }
