@@ -5,9 +5,6 @@ use anchor_spl::{
         mint_to, transfer_checked, Mint, MintTo, TokenAccount, TokenInterface, TransferChecked,
     },
 };
-use dotenv::dotenv;
-use solana_program::pubkey::Pubkey as ProgramPubkey;
-use std::{env, str::FromStr};
 
 use crate::state::{Config, Submission, Task};
 
