@@ -92,7 +92,6 @@ impl<'info> CreateTask<'info> {
             deadline,
             pay,
             difficulty,
-            submissions: Vec::new(),
             owner: self.owner.key(),
             task_vault_bump: bumps.task_vault,
             task_bump: bumps.task,

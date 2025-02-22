@@ -31,10 +31,6 @@ impl<'info> SubmitTask<'info> {
             submission_link: link,
             bump: bumps.submission,
         });
-        // Add submission account pubkey to the task submission vector field
-        self.task
-            .submissions
-            .extend_from_slice(&[self.submission.key()]);
 
         Ok(())
     }
