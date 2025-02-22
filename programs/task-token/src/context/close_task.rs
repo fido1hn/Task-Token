@@ -62,7 +62,7 @@ pub struct CloseTask<'info> {
     )]
     pub task_token_mint: InterfaceAccount<'info, Mint>,
     // payment mint
-    #[account(address = get_mint_address())]
+    #[account(address = config.payment_mint)]
     pub pay_mint: InterfaceAccount<'info, Mint>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Interface<'info, TokenInterface>,
@@ -127,12 +127,6 @@ impl<'info> CloseTask<'info> {
 
         Ok(())
     }
-}
-
-fn get_mint_address() -> ProgramPubkey {
-    dotenv().ok();
-    let mint_address = env::var("PAY_MINT_ADDRESS").expect("PAY_MINT_ADDRESS must be set");
-    ProgramPubkey::from_str(&mint_address).expect("Invalid MINT_ADDRESS")
 }
 
 #[event]
