@@ -17,28 +17,28 @@ pub struct CloseTask<'info> {
       seeds = [b"config", config.admin.key().as_ref()],
       bump = config.config_bump
     )]
-    pub config: Account<'info, Config>,
+    pub config: Box<Account<'info, Config>>,
     #[account(
       mut,
       seeds = [b"task", task.title.as_bytes(), task.owner.key().as_ref()],
       bump = task.task_bump,
       close = signer
     )]
-    pub task: Account<'info, Task>,
+    pub task: Box<Account<'info, Task>>,
     #[account(
       mut,
       seeds = [b"submission", submission.developer.as_ref(), task.key().as_ref()],
       bump = submission.bump,
       close = signer
     )]
-    pub submission: Account<'info, Submission>,
+    pub submission: Box<Account<'info, Submission>>,
     // task vault
     #[account(
       mut,
       seeds = [b"task_vault", task.key().as_ref()],
       bump = task.task_bump,
     )]
-    pub task_vault: InterfaceAccount<'info, TokenAccount>,
+    pub task_vault: Box<InterfaceAccount<'info, TokenAccount>>,
     // developer pay ata
     #[account(
       init_if_needed,
@@ -46,7 +46,7 @@ pub struct CloseTask<'info> {
       associated_token::mint = pay_mint,
       associated_token::authority = developer
     )]
-    pub developer_pay_ata: InterfaceAccount<'info, TokenAccount>,
+    pub developer_pay_ata: Box<InterfaceAccount<'info, TokenAccount>>,
     // developer rewards ata
     #[account(
       init_if_needed,
@@ -54,16 +54,16 @@ pub struct CloseTask<'info> {
       associated_token::mint = task_token_mint,
       associated_token::authority = developer
     )]
-    pub developer_task_token_ata: InterfaceAccount<'info, TokenAccount>,
+    pub developer_task_token_ata: Box<InterfaceAccount<'info, TokenAccount>>,
     // rewards mint
     #[account(
       seeds = [b"rewards", config.key().as_ref()],
       bump = config.mint_bump
     )]
-    pub task_token_mint: InterfaceAccount<'info, Mint>,
+    pub task_token_mint: Box<InterfaceAccount<'info, Mint>>,
     // payment mint
     #[account(address = config.payment_mint)]
-    pub pay_mint: InterfaceAccount<'info, Mint>,
+    pub pay_mint: Box<InterfaceAccount<'info, Mint>>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,

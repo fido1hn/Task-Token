@@ -12,16 +12,16 @@ pub struct CreateTask<'info> {
       seeds = [b"config", config.admin.as_ref()],
       bump = config.config_bump
     )]
-    pub config: Account<'info, Config>,
+    pub config: Box<Account<'info, Config>>,
     #[account(address = config.payment_mint)]
-    pub pay_mint: InterfaceAccount<'info, Mint>,
+    pub pay_mint: Box<InterfaceAccount<'info, Mint>>,
     #[account(
       init_if_needed,
       payer = owner, 
       associated_token::mint = pay_mint,
       associated_token::authority = owner,
     )]
-    pub owner_pay_mint_ata: InterfaceAccount<'info, TokenAccount>,
+    pub owner_pay_mint_ata: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(
       init,
       payer = owner,
@@ -29,7 +29,7 @@ pub struct CreateTask<'info> {
       seeds = [b"task", title.as_bytes(), owner.key().as_ref()],
       bump
     )]
-    pub task: Account<'info, Task>,
+    pub task: Box<Account<'info, Task>>,
     #[account(
       init,
       payer = owner,
@@ -38,7 +38,7 @@ pub struct CreateTask<'info> {
       token::mint = pay_mint,
       token::authority = config,
     )]
-    pub task_vault: InterfaceAccount<'info, TokenAccount>,
+    pub task_vault: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(
       mut,
       seeds = [b"config", config.key().as_ref()],
