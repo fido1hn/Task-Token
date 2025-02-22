@@ -31,6 +31,7 @@ pub struct Initialize<'info> {
       mint::freeze_authority = config,
     )]
     pub mint: InterfaceAccount<'info, Mint>,
+    pub payment_mint: AccountInfo<'info>,
     pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
 }
@@ -39,6 +40,7 @@ impl<'info> Initialize<'info> {
     pub fn initialize(&mut self, fee: u16, bumps: InitializeBumps) -> Result<()> {
         self.config.set_inner(Config {
             admin: self.admin.key(),
+            payment_mint: self.payment_mint.key(),
             fee,
             config_bump: bumps.config,
             mint_bump: bumps.mint,
