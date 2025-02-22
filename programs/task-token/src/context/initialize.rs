@@ -4,7 +4,6 @@ use anchor_spl::token_interface::{Mint, TokenInterface};
 use crate::state::Config;
 
 #[derive(Accounts)]
-#[instruction(fee:u16)]
 pub struct Initialize<'info> {
     #[account(mut)]
     admin: Signer<'info>,
@@ -31,6 +30,7 @@ pub struct Initialize<'info> {
       mint::freeze_authority = config,
     )]
     pub mint: InterfaceAccount<'info, Mint>,
+    /// CHECK: This is the payment mint. We'll store its address in the config.
     pub payment_mint: AccountInfo<'info>,
     pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
