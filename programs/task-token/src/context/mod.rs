@@ -12,3 +12,6 @@ pub use close_task::*;
 
 pub mod create_task_vault;
 pub use create_task_vault::*;
+
+pub mod close_submission;
+pub use close_submission::*;

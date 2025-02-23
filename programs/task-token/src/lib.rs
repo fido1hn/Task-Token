@@ -42,4 +42,8 @@ pub mod task_token {
     pub fn close_task(ctx: Context<CloseTask>) -> Result<()> {
         ctx.accounts.close_task()
     }
+
+    pub fn close_submission(ctx: Context<CloseSubmission>) -> Result<()> {
+        ctx.accounts.close_submission()
+    }
 }
