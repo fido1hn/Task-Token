@@ -6,7 +6,10 @@ use anchor_spl::{
     },
 };
 
-use crate::state::{Config, Submission, Task};
+use crate::{
+    events::TaskCompleted,
+    state::{Config, Submission, Task},
+};
 
 #[derive(Accounts)]
 pub struct CloseTask<'info> {
@@ -127,15 +130,4 @@ impl<'info> CloseTask<'info> {
 
         Ok(())
     }
-}
-
-#[event]
-pub struct TaskCompleted {
-    pub task: Pubkey,
-    pub description: String,
-    pub submission: String,
-    pub difficulty: u8,
-    pub developer: Pubkey,
-    pub task_owner: Pubkey,
-    pub closed_at: i64,
 }
