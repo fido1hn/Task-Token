@@ -14,14 +14,14 @@ pub struct CreateTask<'info> {
     )]
     pub config: Box<Account<'info, Config>>,
     #[account(address = config.payment_mint)]
-    pub pay_mint: Box<InterfaceAccount<'info, Mint>>,
+    pub payment_mint: Box<InterfaceAccount<'info, Mint>>,
     #[account(
       init_if_needed,
       payer = owner, 
-      associated_token::mint = pay_mint,
+      associated_token::mint = payment_mint,
       associated_token::authority = owner,
     )]
-    pub owner_pay_mint_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub owner_payment_mint_ata: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(
       init,
       payer = owner,
@@ -35,7 +35,7 @@ pub struct CreateTask<'info> {
       payer = owner,
       seeds = [b"task_vault", task.key().as_ref()],
       bump,
-      token::mint = pay_mint,
+      token::mint = payment_mint,
       token::authority = config,
     )]
     pub task_vault: Box<InterfaceAccount<'info, TokenAccount>>,
@@ -78,8 +78,8 @@ impl<'info> CreateTask<'info> {
         // Transfer to the task vault
         let cpi_program = self.token_program.to_account_info();
         let cpi_accounts = TransferChecked { 
-          from: self.owner_pay_mint_ata.to_account_info(), 
-          mint: self.pay_mint.to_account_info(), 
+          from: self.owner_payment_mint_ata.to_account_info(), 
+          mint: self.payment_mint.to_account_info(), 
           to: self.task_vault.to_account_info(), 
           authority: self.owner.to_account_info() 
         };
