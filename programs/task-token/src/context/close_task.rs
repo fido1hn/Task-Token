@@ -78,7 +78,26 @@ impl<'info> CloseTask<'info> {
         // check project owner is signer
         require_eq!(self.signer.key(), self.task.owner.key());
 
-        // send fee from vault to developer
+        self.pay_developer()?;
+        self.mint_task_tokens()?;
+        self.close_task_vault()?;
+
+        // emit the task completed event
+        emit!(TaskCompleted {
+            task: self.task.key(),
+            description: self.task.description.to_string(),
+            submission: self.submission.submission_link.to_string(),
+            difficulty: self.task.difficulty,
+            developer: self.developer.key(),
+            task_owner: self.task.owner.key(),
+            closed_at: Clock::get()?.unix_timestamp
+        });
+
+        Ok(())
+    }
+
+    fn pay_developer(&mut self) -> Result<()> {
+        // send payment from vault to developer
         let cpi_program = self.token_program.to_account_info();
         let cpi_accounts = TransferChecked {
             from: self.task_vault.to_account_info(),
@@ -95,6 +114,10 @@ impl<'info> CloseTask<'info> {
 
         transfer_checked(cpi_ctx, self.task_vault.amount, 6)?;
 
+        Ok(())
+    }
+
+    fn mint_task_tokens(&mut self) -> Result<()> {
         // Mint task tokens to developer
         let cpi_program = self.token_program.to_account_info();
         let cpi_accounts = MintTo {
@@ -118,16 +141,22 @@ impl<'info> CloseTask<'info> {
 
         mint_to(cpi_ctx, amount)?;
 
-        // emit the task completed event
-        emit!(TaskCompleted {
-            task: self.task.key(),
-            description: self.task.description.to_string(),
-            submission: self.submission.submission_link.to_string(),
-            difficulty: self.task.difficulty,
-            developer: self.developer.key(),
-            task_owner: self.task.owner.key(),
-            closed_at: Clock::get()?.unix_timestamp
-        });
+        Ok(())
+    }
+
+    fn close_task_vault(&mut self) -> Result<()> {
+        // close task vault
+        let task_vault_info = self.task_vault.to_account_info();
+        let signer_info = self.signer.to_account_info();
+
+        // Transfer the remaining balance to the signer
+        let remaining_lamports = task_vault_info.lamports();
+        **signer_info.try_borrow_mut_lamports()? += remaining_lamports;
+        **task_vault_info.try_borrow_mut_lamports()? = 0;
+
+        // Mark the account as closed
+        let mut account_data = task_vault_info.try_borrow_mut_data()?;
+        account_data.fill(0);
 
         Ok(())
     }
