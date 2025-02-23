@@ -30,6 +30,10 @@ pub mod task_token {
             .create_task(title, description, pay, deadline, difficulty, ctx.bumps)
     }
 
+    pub fn create_task_vault(ctx: Context<CreateTaskVault>) -> Result<()> {
+        ctx.accounts.create_task_vault()
+    }
+
     pub fn submit_task(ctx: Context<SubmitTask>, link: String) -> Result<()> {
         ctx.accounts.submit_task(link, ctx.bumps)
     }
