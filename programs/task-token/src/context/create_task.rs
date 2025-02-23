@@ -1,7 +1,12 @@
-use anchor_lang::{prelude::*, system_program::{Transfer, transfer}};
-use anchor_spl::{associated_token::AssociatedToken, token_interface::{Mint, TokenAccount, TokenInterface, TransferChecked, transfer_checked}};
+use anchor_lang::{
+    prelude::*,
+    system_program::{transfer, Transfer},
+};
 
-use crate::{errors::CustomError, state::{Config, Task}};
+use crate::{
+    errors::CustomError,
+    state::{Config, Task},
+};
 
 #[derive(Accounts)]
 #[instruction(title: String)]
@@ -13,15 +18,6 @@ pub struct CreateTask<'info> {
       bump = config.config_bump
     )]
     pub config: Box<Account<'info, Config>>,
-    #[account(address = config.payment_mint)]
-    pub payment_mint: Box<InterfaceAccount<'info, Mint>>,
-    #[account(
-      init_if_needed,
-      payer = owner, 
-      associated_token::mint = payment_mint,
-      associated_token::authority = owner,
-    )]
-    pub owner_payment_mint_ata: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(
       init,
       payer = owner,
@@ -31,22 +27,11 @@ pub struct CreateTask<'info> {
     )]
     pub task: Box<Account<'info, Task>>,
     #[account(
-      init,
-      payer = owner,
-      seeds = [b"task_vault", task.key().as_ref()],
-      bump,
-      token::mint = payment_mint,
-      token::authority = config,
-    )]
-    pub task_vault: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(
       mut,
       seeds = [b"config", config.key().as_ref()],
       bump = config.vault_bump
     )]
-    pub fee_vault: SystemAccount<'info>,
-    pub token_program: Interface<'info, TokenInterface>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub config_vault: SystemAccount<'info>,
     pub system_program: Program<'info, System>,
 }
 
@@ -60,31 +45,20 @@ impl<'info> CreateTask<'info> {
         difficulty: u8,
         bumps: CreateTaskBumps,
     ) -> Result<()> {
-        // Validate difficulty
+        // Check difficulty
         require!(difficulty <= 2, CustomError::InvalidDifficulty);
         // Check payment >= $20
         require_gte!(pay, 20);
 
-        // Transfer to the config vault
+        // Collect listing fee
         let cpi_program = self.system_program.to_account_info();
-        let cpi_accounts = Transfer { 
-          from: self.owner.to_account_info(), 
-          to: self.fee_vault.to_account_info() 
+        let cpi_accounts = Transfer {
+            from: self.owner.to_account_info(),
+            to: self.config_vault.to_account_info(),
         };
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
         let listing_fee = 30_000_000;
         transfer(cpi_ctx, listing_fee)?;
-
-        // Transfer to the task vault
-        let cpi_program = self.token_program.to_account_info();
-        let cpi_accounts = TransferChecked { 
-          from: self.owner_payment_mint_ata.to_account_info(), 
-          mint: self.payment_mint.to_account_info(), 
-          to: self.task_vault.to_account_info(), 
-          authority: self.owner.to_account_info() 
-        };
-        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-        transfer_checked(cpi_ctx, pay, 6)?;
 
         self.task.set_inner(Task {
             title,
@@ -93,7 +67,7 @@ impl<'info> CreateTask<'info> {
             pay,
             difficulty,
             owner: self.owner.key(),
-            task_vault_bump: bumps.task_vault,
+            task_vault_bump: 0u8,
             task_bump: bumps.task,
         });
         Ok(())

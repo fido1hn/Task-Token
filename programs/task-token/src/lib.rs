@@ -31,7 +31,7 @@ pub mod task_token {
     }
 
     pub fn create_task_vault(ctx: Context<CreateTaskVault>) -> Result<()> {
-        ctx.accounts.create_task_vault()
+        ctx.accounts.create_task_vault(ctx.bumps)
     }
 
     pub fn submit_task(ctx: Context<SubmitTask>, link: String) -> Result<()> {
