@@ -15,6 +15,7 @@ use crate::{
 pub struct CloseTask<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
+    #[account(mut)]
     pub developer: SystemAccount<'info>,
     #[account(
       seeds = [b"config", config.admin.key().as_ref()],
@@ -42,15 +43,15 @@ pub struct CloseTask<'info> {
       bump = task.task_bump,
     )]
     pub task_vault: Box<InterfaceAccount<'info, TokenAccount>>,
-    // developer pay ata
+    // developer payment ata
     #[account(
       init_if_needed,
       payer = signer,
-      associated_token::mint = pay_mint,
+      associated_token::mint = payment_mint,
       associated_token::authority = developer
     )]
-    pub developer_pay_ata: Box<InterfaceAccount<'info, TokenAccount>>,
-    // developer rewards ata
+    pub developer_payment_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    // developer task token ata
     #[account(
       init_if_needed,
       payer = signer,
@@ -58,15 +59,15 @@ pub struct CloseTask<'info> {
       associated_token::authority = developer
     )]
     pub developer_task_token_ata: Box<InterfaceAccount<'info, TokenAccount>>,
-    // rewards mint
+    // task token mint
     #[account(
-      seeds = [b"rewards", config.key().as_ref()],
+      seeds = [b"task_token", config.key().as_ref()],
       bump = config.mint_bump
     )]
     pub task_token_mint: Box<InterfaceAccount<'info, Mint>>,
     // payment mint
     #[account(address = config.payment_mint)]
-    pub pay_mint: Box<InterfaceAccount<'info, Mint>>,
+    pub payment_mint: Box<InterfaceAccount<'info, Mint>>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
@@ -81,8 +82,8 @@ impl<'info> CloseTask<'info> {
         let cpi_program = self.token_program.to_account_info();
         let cpi_accounts = TransferChecked {
             from: self.task_vault.to_account_info(),
-            mint: self.pay_mint.to_account_info(),
-            to: self.developer_pay_ata.to_account_info(),
+            mint: self.payment_mint.to_account_info(),
+            to: self.developer_payment_ata.to_account_info(),
             authority: self.config.to_account_info(),
         };
 

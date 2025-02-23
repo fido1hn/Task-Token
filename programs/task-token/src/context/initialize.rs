@@ -23,13 +23,13 @@ pub struct Initialize<'info> {
     #[account(
       init,
       payer = admin,
-      seeds = [b"rewards", config.key().as_ref()],
+      seeds = [b"task_token", config.key().as_ref()],
       bump,
       mint::decimals = 6,
       mint::authority = config,
       mint::freeze_authority = config,
     )]
-    pub mint: InterfaceAccount<'info, Mint>,
+    pub task_token_mint: InterfaceAccount<'info, Mint>,
     /// CHECK: This is the payment mint. We'll store its address in the config.
     pub payment_mint: AccountInfo<'info>,
     pub token_program: Interface<'info, TokenInterface>,
@@ -43,7 +43,7 @@ impl<'info> Initialize<'info> {
             payment_mint: self.payment_mint.key(),
             fee,
             config_bump: bumps.config,
-            mint_bump: bumps.mint,
+            mint_bump: bumps.task_token_mint,
             vault_bump: bumps.vault,
         });
         Ok(())
