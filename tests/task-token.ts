@@ -10,7 +10,10 @@ import { TaskToken } from "../target/types/task_token";
 
 describe("task-token", () => {
   // Configure the client to use the local cluster.
-  const provider = anchor.AnchorProvider.env();
+  const provider = new anchor.AnchorProvider(
+    new anchor.web3.Connection("http://127.0.0.1:8899", "confirmed"),
+    anchor.AnchorProvider.env().wallet
+  );
   anchor.setProvider(provider);
   const program = anchor.workspace.TaskToken as Program<TaskToken>;
   const connection = provider.connection;
@@ -70,7 +73,7 @@ describe("task-token", () => {
           admin: admin.publicKey,
           config: configPda,
           vault: vaultPda,
-          mint: mintPda,
+          taskTokenMint: mintPda,
           tokenProgram,
           systemProgram,
         })
@@ -83,5 +86,7 @@ describe("task-token", () => {
       );
       console.log(`log: ${logs}`);
     }
+    console.log(`commitment: ${connection.commitment}`);
+    console.log(`cluster: ${connection.rpcEndpoint}`);
   });
 });
