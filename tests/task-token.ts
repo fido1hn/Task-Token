@@ -36,8 +36,8 @@ describe("task-token", () => {
     program.programId
   );
   // Task Token Mint
-  const [mintPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("rewards"), configPda.toBuffer()],
+  const [taskTokenMint] = PublicKey.findProgramAddressSync(
+    [Buffer.from("task_token"), configPda.toBuffer()],
     program.programId
   );
   // Payment Mint:
@@ -57,14 +57,14 @@ describe("task-token", () => {
 
       const latestBlockHash = await connection.getLatestBlockhash();
 
-      const txhash = await connection.confirmTransaction({
+      const _ = await connection.confirmTransaction({
         blockhash: latestBlockHash.blockhash,
         lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
         signature: txSig,
       });
 
       console.log(
-        `Success! Check out your TX here: https://explorer.solana.com/tx/${txhash}?cluster=Localnet`
+        `Success! Check out your TX here: https://explorer.solana.com/tx/${txSig}?cluster=Localnet`
       );
 
       paymentMint = await createMint(
@@ -81,26 +81,23 @@ describe("task-token", () => {
 
   it("Is initialized!", async () => {
     // Add your test here.
-    // try {
-    //   const tx = await program.methods
-    //     .initialize(150)
-    //     .accountsPartial({
-    //       admin: admin.publicKey,
-    //       config: configPda,
-    //       vault: vaultPda,
-    //       taskTokenMint: mintPda,
-    //       tokenProgram,
-    //       systemProgram,
-    //     })
-    //     .signers([admin])
-    //     .rpc();
-    //   console.log("Your transaction signature", tx);
-    // } catch (error) {
-    //   console.log(`an error occured: ${error}`);
-    // } finally {
-    // }
-    console.log(`commitment: ${connection.commitment}`);
-    console.log(`cluster: ${connection.rpcEndpoint}`);
-    console.log(`payment Mint addy: ${paymentMint}`);
+    try {
+      const tx = await program.methods
+        .initialize(150)
+        .accountsPartial({
+          config: configPda,
+          admin: admin.publicKey,
+          paymentMint,
+          vault: vaultPda,
+          taskTokenMint,
+          tokenProgram,
+          systemProgram,
+        })
+        .signers([admin])
+        .rpc();
+      console.log("Your transaction signature", tx);
+    } catch (error) {
+      console.log(`an error occured: ${error}`);
+    }
   });
 });
