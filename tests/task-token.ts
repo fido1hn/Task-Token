@@ -49,6 +49,7 @@ describe("task-token", () => {
   );
   // Payment Mint:
   let paymentMint: PublicKey;
+  let taskOnePda: PublicKey;
 
   // Token program
   const tokenProgram = anchor.utils.token.TOKEN_PROGRAM_ID;
@@ -181,11 +182,11 @@ describe("task-token", () => {
     }
   });
 
-  // Happy path - initialize contract
+  // Happy path - create task
   it("Can create a task!", async () => {
     // Add your test here.
     // task owner create a task
-    const [taskOnePda] = PublicKey.findProgramAddressSync(
+    [taskOnePda] = PublicKey.findProgramAddressSync(
       [
         Buffer.from("task"),
         Buffer.from("Task-1: Edit README"),
@@ -209,6 +210,37 @@ describe("task-token", () => {
           configVault: vaultPda,
         })
         .signers([taskOwner])
+        .rpc();
+      console.log("Your transaction signature", tx);
+    } catch (error) {
+      console.log(`an error occured: ${error}`);
+    }
+  });
+
+  // Happy path - submit task
+  it("Can submit a task!", async () => {
+    // Add your test here.
+    // task submission PDA for task one
+    let [taskOneSubmissionPda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("submission"),
+        developer.publicKey.toBuffer(),
+        taskOnePda.toBuffer(),
+      ],
+      program.programId
+    );
+    try {
+      let commit_url = "http://changes-made-to-readme.git";
+
+      const tx = await program.methods
+        .submitTask(commit_url)
+        .accountsPartial({
+          submission: taskOneSubmissionPda,
+          task: taskOnePda,
+          systemProgram: systemProgram,
+          signer: developer.publicKey,
+        })
+        .signers([developer])
         .rpc();
       console.log("Your transaction signature", tx);
     } catch (error) {
