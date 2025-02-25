@@ -83,10 +83,28 @@ describe("task-token", () => {
 
       const latestBlockHash2 = await connection.getLatestBlockhash();
 
-      const _ = await connection.confirmTransaction({
+      const tx2 = await connection.confirmTransaction({
         blockhash: latestBlockHash2.blockhash,
         lastValidBlockHeight: latestBlockHash2.lastValidBlockHeight,
         signature: txSig2,
+      });
+
+      console.log(
+        `Success! Check out your TX here: https://explorer.solana.com/tx/${txSig2}?cluster=Localnet`
+      );
+
+      // Airdrop sol to developer
+      const txSig3 = await provider.connection.requestAirdrop(
+        developer.publicKey,
+        10 * LAMPORTS_PER_SOL
+      );
+
+      const latestBlockHash3 = await connection.getLatestBlockhash();
+
+      const tx3 = await connection.confirmTransaction({
+        blockhash: latestBlockHash3.blockhash,
+        lastValidBlockHeight: latestBlockHash3.lastValidBlockHeight,
+        signature: txSig3,
       });
 
       console.log(
@@ -128,7 +146,12 @@ describe("task-token", () => {
         taskOwnerAta.address
       );
 
+      let developerBalance = await connection.getBalance(developer.publicKey);
+
       console.log(`TaskOwner balance is: ${taskOwnerbalance.value.uiAmount}`);
+      console.log(
+        `Developer Sol balance is: ${developerBalance / LAMPORTS_PER_SOL}`
+      );
     } catch (e) {
       console.error(`Oops, something went wrong: ${e}`);
     }
