@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
+import { Program, BN } from "@coral-xyz/anchor";
 import {
   LAMPORTS_PER_SOL,
   PublicKey,
@@ -57,7 +57,7 @@ describe("task-token", () => {
 
   before("Prepare test environment", async () => {
     try {
-      // Airdrop the admin som sol
+      // Airdrop sol to admin
       const txSig = await provider.connection.requestAirdrop(
         admin.publicKey,
         10 * LAMPORTS_PER_SOL
@@ -65,7 +65,7 @@ describe("task-token", () => {
 
       const latestBlockHash = await connection.getLatestBlockhash();
 
-      const _ = await connection.confirmTransaction({
+      const tx = await connection.confirmTransaction({
         blockhash: latestBlockHash.blockhash,
         lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
         signature: txSig,
@@ -73,6 +73,24 @@ describe("task-token", () => {
 
       console.log(
         `Success! Check out your TX here: https://explorer.solana.com/tx/${txSig}?cluster=Localnet`
+      );
+
+      // Airdrop sol to taskOwner
+      const txSig2 = await provider.connection.requestAirdrop(
+        taskOwner.publicKey,
+        10 * LAMPORTS_PER_SOL
+      );
+
+      const latestBlockHash2 = await connection.getLatestBlockhash();
+
+      const _ = await connection.confirmTransaction({
+        blockhash: latestBlockHash2.blockhash,
+        lastValidBlockHeight: latestBlockHash2.lastValidBlockHeight,
+        signature: txSig2,
+      });
+
+      console.log(
+        `Success! Check out your TX here: https://explorer.solana.com/tx/${txSig2}?cluster=Localnet`
       );
 
       // Create protocol payment mint
@@ -152,23 +170,26 @@ describe("task-token", () => {
       ],
       program.programId
     );
-    // try {
-    //   const tx = await program.methods
-    //     .createTask({})
-    //     .accountsPartial({
-    //       config: configPda,
-    //       admin: admin.publicKey,
-    //       paymentMint,
-    //       vault: vaultPda,
-    //       taskTokenMint,
-    //       tokenProgram,
-    //       systemProgram,
-    //     })
-    //     .signers([admin])
-    //     .rpc();
-    //   console.log("Your transaction signature", tx);
-    // } catch (error) {
-    //   console.log(`an error occured: ${error}`);
-    // }
+    try {
+      let title = "Task-1: Edit README";
+      let description = "Correct the spelling mistake in the README";
+      let pay = new BN(20_000_000);
+      let deadline = new BN(1424832629);
+      let difficulty = 0;
+      const tx = await program.methods
+        .createTask(title, description, pay, deadline, difficulty)
+        .accountsPartial({
+          config: configPda,
+          task: taskOnePda,
+          owner: taskOwner.publicKey,
+          systemProgram: systemProgram,
+          configVault: vaultPda,
+        })
+        .signers([taskOwner])
+        .rpc();
+      console.log("Your transaction signature", tx);
+    } catch (error) {
+      console.log(`an error occured: ${error}`);
+    }
   });
 });
