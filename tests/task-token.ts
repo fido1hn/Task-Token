@@ -31,7 +31,7 @@ describe("task-token", () => {
   const taskOwner = anchor.web3.Keypair.generate();
 
   // taskOwner Payment ATA
-  let taskOwnerAta: PublicKey;
+  let taskOwnerAta: Account;
 
   // developer keypair
   const developer = anchor.web3.Keypair.generate();
@@ -139,7 +139,7 @@ describe("task-token", () => {
         provider.connection,
         admin,
         paymentMint,
-        taskOwnerAta,
+        taskOwnerAta.address,
         admin,
         30_000_000
       );
@@ -227,31 +227,21 @@ describe("task-token", () => {
     // Add your test here.
     // task owner create a task
     [taskOneVault] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from("task_vault"),
-        Buffer.from("Task-1: Edit README"),
-        taskOwner.publicKey.toBuffer(),
-      ],
+      [Buffer.from("task_vault"), taskOnePda.toBuffer()],
       program.programId
     );
     try {
-      // let title = "Task-1: Edit README";
-      // let description = "Correct the spelling mistake in the README";
-      // let pay = new BN(20_000_000);
-      // let deadline = new BN(1424832629);
-      // let difficulty = 0;
       const tx = await program.methods
         .createTaskVault()
         .accountsPartial({
           config: configPda,
           task: taskOnePda,
           paymentMint,
-          signerPaymentMintAta: 
-          owner: tas
-          taskOneVault,
+          signerPaymentMintAta: taskOwnerAta.address,
+          signer: taskOwner.publicKey,
+          taskVault: taskOneVault,
           tokenProgram,
           systemProgram: systemProgram,
-          configVault: vaultPda,
         })
         .signers([taskOwner])
         .rpc();
