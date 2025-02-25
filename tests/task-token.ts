@@ -7,6 +7,7 @@ import {
   SystemProgram,
 } from "@solana/web3.js";
 import {
+  Account,
   createMint,
   getOrCreateAssociatedTokenAccount,
   mintTo,
@@ -29,6 +30,9 @@ describe("task-token", () => {
   // taskOwner keypair
   const taskOwner = anchor.web3.Keypair.generate();
 
+  // taskOwner Payment ATA
+  let taskOwnerAta: PublicKey;
+
   // developer keypair
   const developer = anchor.web3.Keypair.generate();
 
@@ -50,6 +54,7 @@ describe("task-token", () => {
   // Payment Mint:
   let paymentMint: PublicKey;
   let taskOnePda: PublicKey;
+  let taskOneVault: PublicKey;
 
   // Token program
   const tokenProgram = anchor.utils.token.TOKEN_PROGRAM_ID;
@@ -122,7 +127,7 @@ describe("task-token", () => {
       );
 
       // Check the taskOwner has received payment mint tokens
-      const taskOwnerAta = await getOrCreateAssociatedTokenAccount(
+      taskOwnerAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
         admin,
         paymentMint,
@@ -134,7 +139,7 @@ describe("task-token", () => {
         provider.connection,
         admin,
         paymentMint,
-        taskOwnerAta.address,
+        taskOwnerAta,
         admin,
         30_000_000
       );
@@ -206,6 +211,45 @@ describe("task-token", () => {
           config: configPda,
           task: taskOnePda,
           owner: taskOwner.publicKey,
+          systemProgram: systemProgram,
+          configVault: vaultPda,
+        })
+        .signers([taskOwner])
+        .rpc();
+      console.log("Your transaction signature", tx);
+    } catch (error) {
+      console.log(`an error occured: ${error}`);
+    }
+  });
+
+  // Happy path - create task
+  it("Can create a task vault!", async () => {
+    // Add your test here.
+    // task owner create a task
+    [taskOneVault] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("task_vault"),
+        Buffer.from("Task-1: Edit README"),
+        taskOwner.publicKey.toBuffer(),
+      ],
+      program.programId
+    );
+    try {
+      // let title = "Task-1: Edit README";
+      // let description = "Correct the spelling mistake in the README";
+      // let pay = new BN(20_000_000);
+      // let deadline = new BN(1424832629);
+      // let difficulty = 0;
+      const tx = await program.methods
+        .createTaskVault()
+        .accountsPartial({
+          config: configPda,
+          task: taskOnePda,
+          paymentMint,
+          signerPaymentMintAta: 
+          owner: tas
+          taskOneVault,
+          tokenProgram,
           systemProgram: systemProgram,
           configVault: vaultPda,
         })
