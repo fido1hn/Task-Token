@@ -11,6 +11,7 @@ import {
   createMint,
   getOrCreateAssociatedTokenAccount,
   mintTo,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { TaskToken } from "../target/types/task_token";
 
@@ -36,6 +37,12 @@ describe("task-token", () => {
   // developer keypair
   const developer = anchor.web3.Keypair.generate();
 
+  // developer Payment ATA
+  let developerPaymentAta: Account;
+
+  // developer Task Token ATA
+  let developerTaskTokenAta: Account;
+
   // Config PDA
   const [configPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("config"), admin.publicKey.toBuffer()],
@@ -55,6 +62,7 @@ describe("task-token", () => {
   let paymentMint: PublicKey;
   let taskOnePda: PublicKey;
   let taskOneVault: PublicKey;
+  let taskOneSubmissionPda: PublicKey;
 
   // Token program
   const tokenProgram = anchor.utils.token.TOKEN_PROGRAM_ID;
@@ -66,7 +74,7 @@ describe("task-token", () => {
       // Airdrop sol to admin
       const txSig = await provider.connection.requestAirdrop(
         admin.publicKey,
-        10 * LAMPORTS_PER_SOL
+        100 * LAMPORTS_PER_SOL
       );
 
       const latestBlockHash = await connection.getLatestBlockhash();
@@ -84,7 +92,7 @@ describe("task-token", () => {
       // Airdrop sol to taskOwner
       const txSig2 = await provider.connection.requestAirdrop(
         taskOwner.publicKey,
-        10 * LAMPORTS_PER_SOL
+        100 * LAMPORTS_PER_SOL
       );
 
       const latestBlockHash2 = await connection.getLatestBlockhash();
@@ -141,7 +149,7 @@ describe("task-token", () => {
         paymentMint,
         taskOwnerAta.address,
         admin,
-        30_000_000
+        100_000_000
       );
 
       console.log(
@@ -226,8 +234,15 @@ describe("task-token", () => {
   it("Can create a task vault!", async () => {
     // Add your test here.
     // task owner create a task
+
+    const taskAccount = await program.account.task.fetch(taskOnePda);
+
     [taskOneVault] = PublicKey.findProgramAddressSync(
-      [Buffer.from("task_vault"), taskOnePda.toBuffer()],
+      [
+        Buffer.from("task_vault"),
+        taskOnePda.toBuffer(),
+        Buffer.from([taskAccount.taskVaultBump]),
+      ],
       program.programId
     );
     try {
@@ -255,7 +270,7 @@ describe("task-token", () => {
   it("Can submit a task!", async () => {
     // Add your test here.
     // task submission PDA for task one
-    let [taskOneSubmissionPda] = PublicKey.findProgramAddressSync(
+    [taskOneSubmissionPda] = PublicKey.findProgramAddressSync(
       [
         Buffer.from("submission"),
         developer.publicKey.toBuffer(),
@@ -275,6 +290,48 @@ describe("task-token", () => {
           signer: developer.publicKey,
         })
         .signers([developer])
+        .rpc();
+      console.log("Your transaction signature", tx);
+    } catch (error) {
+      console.log(`an error occured: ${error}`);
+    }
+  });
+
+  // Happy Path - Task Owner can close task and pay developer
+  it("Task owner can close task and pay developer", async () => {
+    developerPaymentAta = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      developer,
+      paymentMint,
+      developer.publicKey
+    );
+
+    developerTaskTokenAta = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      developer,
+      taskTokenMint,
+      developer.publicKey
+    );
+
+    try {
+      const tx = await program.methods
+        .closeTask()
+        .accountsPartial({
+          config: configPda,
+          submission: taskOneSubmissionPda,
+          task: taskOnePda,
+          taskVault: taskOneVault,
+          taskTokenMint,
+          paymentMint,
+          developer: developer.publicKey,
+          developerTaskTokenAta: developerTaskTokenAta.address,
+          signer: taskOwner.publicKey,
+          developerPaymentAta: developerPaymentAta.address,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          tokenProgram,
+          systemProgram,
+        })
+        .signers([taskOwner])
         .rpc();
       console.log("Your transaction signature", tx);
     } catch (error) {

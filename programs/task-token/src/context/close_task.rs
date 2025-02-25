@@ -2,7 +2,8 @@ use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{
-        mint_to, transfer_checked, Mint, MintTo, TokenAccount, TokenInterface, TransferChecked,
+        close_account, mint_to, transfer_checked, CloseAccount, Mint, MintTo, TokenAccount,
+        TokenInterface, TransferChecked,
     },
 };
 
@@ -145,18 +146,21 @@ impl<'info> CloseTask<'info> {
     }
 
     fn close_task_vault(&mut self) -> Result<()> {
-        // close task vault
-        let task_vault_info = self.task_vault.to_account_info();
-        let signer_info = self.signer.to_account_info();
+        let cpi_program = self.token_program.to_account_info();
+        let cpi_accounts = CloseAccount {
+            account: self.task_vault.to_account_info(),
+            destination: self.signer.to_account_info(),
+            authority: self.config.to_account_info(),
+        };
 
-        // Transfer the remaining balance to the signer
-        let remaining_lamports = task_vault_info.lamports();
-        **signer_info.try_borrow_mut_lamports()? += remaining_lamports;
-        **task_vault_info.try_borrow_mut_lamports()? = 0;
+        let task_key = self.task.key();
+        let seeds = [b"task_vault", task_key.as_ref()];
 
-        // Mark the account as closed
-        let mut account_data = task_vault_info.try_borrow_mut_data()?;
-        account_data.fill(0);
+        let signer_seeds = &[&seeds[..]];
+
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+
+        close_account(cpi_ctx)?;
 
         Ok(())
     }

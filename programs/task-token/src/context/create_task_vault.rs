@@ -38,7 +38,7 @@ pub struct CreateTaskVault<'info> {
 
 impl<'info> CreateTaskVault<'info> {
     pub fn create_task_vault(&mut self, bump: CreateTaskVaultBumps) -> Result<()> {
-        // Save bump
+        // Save bump; Needs task account to get Task Vault bump
         self.task.task_vault_bump = bump.task_vault;
 
         // Transfer to the task vault
