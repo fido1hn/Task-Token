@@ -9,7 +9,7 @@ use anchor_spl::{
 
 use crate::{
     events::TaskCompleted,
-    state::{Config, Submission, Task},
+    state::{Config, Submission, Task, TaskVaultInfo},
 };
 
 #[derive(Accounts)]
@@ -32,7 +32,7 @@ pub struct CloseTask<'info> {
     pub task: Box<Account<'info, Task>>,
     #[account(
       mut,
-      seeds = [b"submission", submission.developer.as_ref(), task.key().as_ref()],
+      seeds = [b"submission", submission.developer.as_ref(), task_vault_info.task.to_bytes().as_ref()],
       bump = submission.bump,
       close = signer
     )]
@@ -40,10 +40,17 @@ pub struct CloseTask<'info> {
     // task vault
     #[account(
       mut,
-      seeds = [b"task_vault", task.key().as_ref()],
-      bump = task.task_bump,
+      seeds = [b"task_vault", task_vault_info.task.to_bytes().as_ref()],
+      bump = task_vault_info.task_vault_bump,
     )]
     pub task_vault: Box<InterfaceAccount<'info, TokenAccount>>,
+    #[account(
+      mut,
+      seeds = [b"task_vault_info", task_vault_info.task.to_bytes().as_ref()],
+      bump = task_vault_info.task_vault_info_bump,
+      close = signer,
+    )]
+    pub task_vault_info: Box<Account<'info, TaskVaultInfo>>,
     // developer payment ata
     #[account(
       init_if_needed,
@@ -153,9 +160,8 @@ impl<'info> CloseTask<'info> {
             authority: self.config.to_account_info(),
         };
 
-        let task_key = self.task.key();
-        let seeds = [b"task_vault", task_key.as_ref()];
-
+        let binding = self.config.admin.key();
+        let seeds = &[b"config", binding.as_ref()];
         let signer_seeds = &[&seeds[..]];
 
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);

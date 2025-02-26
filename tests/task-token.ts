@@ -252,7 +252,7 @@ describe("task-token", () => {
 
   // Happy path - create task
   it("Can create a task vault!", async () => {
-    let [taskOneVault] = PublicKey.findProgramAddressSync(
+    [taskOneVault] = PublicKey.findProgramAddressSync(
       [Buffer.from("task_vault"), taskOnePda.toBuffer()],
       program.programId
     );
@@ -367,7 +367,7 @@ describe("task-token", () => {
     );
 
     try {
-      const tx = await program.methods
+      const closeTaskInstruction = await program.methods
         .closeTask()
         .accountsPartial({
           config: configPda,
@@ -385,8 +385,21 @@ describe("task-token", () => {
           systemProgram,
         })
         .signers([taskOwner])
-        .rpc();
-      console.log("Your transaction signature", tx);
+        .instruction();
+
+      const blockhash = await connection.getLatestBlockhash();
+      const tx = new anchor.web3.Transaction({
+        feePayer: taskOwner.publicKey,
+        blockhash: blockhash.blockhash,
+        lastValidBlockHeight: blockhash.lastValidBlockHeight,
+      }).add(closeTaskInstruction);
+
+      const txSig = await anchor.web3.sendAndConfirmTransaction(
+        connection,
+        tx,
+        [taskOwner]
+      );
+      console.log("Your transaction signature", txSig);
     } catch (error) {
       console.log(`an error occured: ${error}`);
     }
