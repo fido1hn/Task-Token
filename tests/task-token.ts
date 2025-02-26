@@ -350,8 +350,8 @@ describe("task-token", () => {
     }
   });
 
-  // Happy Path - Task Owner can close task and pay developer
-  it("Task owner can close task and pay developer", async () => {
+  // Happy Path - Task Owner can close task by paying developer
+  it("Task owner can close task by paying developer", async () => {
     developerPaymentAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       developer,
@@ -366,6 +366,11 @@ describe("task-token", () => {
       developer.publicKey
     );
 
+    let [taskOneVaultInfo] = PublicKey.findProgramAddressSync(
+      [Buffer.from("task_vault_info"), taskOnePda.toBuffer()],
+      program.programId
+    );
+
     try {
       const closeTaskInstruction = await program.methods
         .closeTask()
@@ -374,11 +379,11 @@ describe("task-token", () => {
           submission: taskOneSubmissionPda,
           task: taskOnePda,
           taskVault: taskOneVault,
+          taskVaultInfo: taskOneVaultInfo,
           taskTokenMint,
           paymentMint,
           developer: developer.publicKey,
           developerTaskTokenAta: developerTaskTokenAta.address,
-          signer: taskOwner.publicKey,
           developerPaymentAta: developerPaymentAta.address,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
           tokenProgram,

@@ -37,12 +37,12 @@ pub struct CloseTask<'info> {
     // task vault
     #[account(
       mut,
-      seeds = [b"task_vault", task_vault_info.task.to_bytes().as_ref()],
+      seeds = [b"task_vault", task.key().as_ref()],
       bump = task_vault_info.task_vault_bump,
     )]
     pub task_vault: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(
-      seeds = [b"task_vault_info", task_vault_info.task.to_bytes().as_ref()],
+      seeds = [b"task_vault_info", task.key().as_ref()],
       bump = task_vault_info.task_vault_info_bump,
     )]
     pub task_vault_info: Box<Account<'info, TaskVaultInfo>>,
