@@ -67,7 +67,6 @@ impl<'info> CreateTask<'info> {
             pay,
             difficulty,
             owner: self.owner.key(),
-            task_vault_bump: 0u8,
             task_bump: bumps.task,
         });
         Ok(())

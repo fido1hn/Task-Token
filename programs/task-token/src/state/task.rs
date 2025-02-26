@@ -11,6 +11,5 @@ pub struct Task {
     pub deadline: i64,
     pub pay: u64,
     pub owner: Pubkey,
-    pub task_vault_bump: u8,
     pub task_bump: u8,
 }

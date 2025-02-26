@@ -252,17 +252,14 @@ describe("task-token", () => {
 
   // Happy path - create task
   it("Can create a task vault!", async () => {
-    // Add your test here.
     // task owner create a task
 
-    // const taskAccount = await program.account.task.fetch(taskOnePda);
-
-    let [taskOneVault, bump] = PublicKey.findProgramAddressSync(
+    let [taskOneVault] = PublicKey.findProgramAddressSync(
       [Buffer.from("task_vault"), taskOnePda.toBuffer()],
       program.programId
     );
     try {
-      const tx = await program.methods
+      const createTaskVaultInstruction = await program.methods
         .createTaskVault()
         .accountsPartial({
           config: configPda,
@@ -275,8 +272,32 @@ describe("task-token", () => {
           systemProgram: systemProgram,
         })
         .signers([taskOwner])
-        .rpc();
-      console.log("Your transaction signature", tx);
+        .instruction();
+
+      const blockhash = await connection.getLatestBlockhash();
+      const tx = new anchor.web3.Transaction({
+        feePayer: taskOwner.publicKey,
+        blockhash: blockhash.blockhash,
+        lastValidBlockHeight: blockhash.lastValidBlockHeight,
+      }).add(createTaskVaultInstruction);
+
+      const txSig = await anchor.web3.sendAndConfirmTransaction(
+        connection,
+        tx,
+        [taskOwner]
+      );
+
+      console.log("Your transaction signature", txSig);
+
+      let taskAccount = await program.account.task.fetch(taskOnePda);
+      const taskVaultAccountInfo = await connection.getAccountInfo(
+        taskOneVault
+      );
+      console.log("Task One Vault Bump", taskAccount.taskVaultBump);
+
+      // Assert that the account exists
+      expect(taskVaultAccountInfo).to.not.be.null;
+      expect(taskVaultAccountInfo).to.not.be.undefined;
     } catch (error) {
       console.log(`an error occured: ${error}`);
     }
