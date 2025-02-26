@@ -42,10 +42,8 @@ pub struct CloseTask<'info> {
     )]
     pub task_vault: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(
-      mut,
       seeds = [b"task_vault_info", task_vault_info.task.to_bytes().as_ref()],
       bump = task_vault_info.task_vault_info_bump,
-      close = signer,
     )]
     pub task_vault_info: Box<Account<'info, TaskVaultInfo>>,
     // developer payment ata

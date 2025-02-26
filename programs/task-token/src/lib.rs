@@ -43,6 +43,10 @@ pub mod task_token {
         ctx.accounts.close_task()
     }
 
+    pub fn close_task_vault(ctx: Context<CloseTaskVault>) -> Result<()> {
+        ctx.accounts.close_task_vault()
+    }
+
     pub fn close_submission(ctx: Context<CloseSubmission>) -> Result<()> {
         ctx.accounts.close_submission()
     }
