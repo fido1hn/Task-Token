@@ -192,9 +192,7 @@ describe("task-token", () => {
       console.log("Your transaction signature", txSig);
 
       const configAccount = await program.account.config.fetch(configPda);
-      expect(configAccount.admin.toString()).to.equal(
-        admin.publicKey.toString()
-      );
+      expect(configAccount.admin.toString()).equal(admin.publicKey.toString());
     } catch (error) {
       console.log(`an error occured: ${error}`);
     }
@@ -218,7 +216,7 @@ describe("task-token", () => {
       let pay = new BN(20_000_000);
       let deadline = new BN(1424832629);
       let difficulty = 0;
-      const tx = await program.methods
+      const createTaskInstruction = await program.methods
         .createTask(title, description, pay, deadline, difficulty)
         .accountsPartial({
           config: configPda,
@@ -228,11 +226,25 @@ describe("task-token", () => {
           configVault: vaultPda,
         })
         .signers([taskOwner])
-        .rpc();
+        .instruction();
 
-      console.log("Your transaction signature", tx);
+      const blockhash = await connection.getLatestBlockhash();
+      const tx = new anchor.web3.Transaction({
+        feePayer: taskOwner.publicKey,
+        blockhash: blockhash.blockhash,
+        lastValidBlockHeight: blockhash.lastValidBlockHeight,
+      }).add(createTaskInstruction);
+
+      const txSig = await anchor.web3.sendAndConfirmTransaction(
+        connection,
+        tx,
+        [taskOwner]
+      );
+
+      console.log("Your transaction signature", txSig);
 
       const taskOneAccount = await program.account.task.fetch(taskOnePda);
+      expect(taskOneAccount.description).equal(description);
     } catch (error) {
       console.log(`an error occured: ${error}`);
     }
