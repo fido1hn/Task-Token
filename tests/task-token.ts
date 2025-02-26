@@ -302,7 +302,6 @@ describe("task-token", () => {
 
   // Happy path - submit task
   it("Can submit a task!", async () => {
-    // Add your test here.
     // task submission PDA for task one
     [taskOneSubmissionPda] = PublicKey.findProgramAddressSync(
       [
@@ -315,7 +314,7 @@ describe("task-token", () => {
     try {
       let commit_url = "http://changes-made-to-readme.git";
 
-      const tx = await program.methods
+      const submissionInstruction = await program.methods
         .submitTask(commit_url)
         .accountsPartial({
           submission: taskOneSubmissionPda,
@@ -324,8 +323,28 @@ describe("task-token", () => {
           signer: developer.publicKey,
         })
         .signers([developer])
-        .rpc();
-      console.log("Your transaction signature", tx);
+        .instruction();
+
+      const blockhash = await connection.getLatestBlockhash();
+      const tx = new anchor.web3.Transaction({
+        feePayer: developer.publicKey,
+        blockhash: blockhash.blockhash,
+        lastValidBlockHeight: blockhash.lastValidBlockHeight,
+      }).add(submissionInstruction);
+
+      const txSig = await anchor.web3.sendAndConfirmTransaction(
+        connection,
+        tx,
+        [developer]
+      );
+
+      console.log("Your transaction signature", txSig);
+
+      const submissionAccount = await program.account.submission.fetch(
+        taskOneSubmissionPda
+      );
+
+      expect(submissionAccount.submissionLink).equal(commit_url);
     } catch (error) {
       console.log(`an error occured: ${error}`);
     }
