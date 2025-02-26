@@ -252,12 +252,11 @@ describe("task-token", () => {
 
   // Happy path - create task
   it("Can create a task vault!", async () => {
-    // task owner create a task
-
     let [taskOneVault] = PublicKey.findProgramAddressSync(
       [Buffer.from("task_vault"), taskOnePda.toBuffer()],
       program.programId
     );
+
     try {
       const createTaskVaultInstruction = await program.methods
         .createTaskVault()
@@ -289,11 +288,9 @@ describe("task-token", () => {
 
       console.log("Your transaction signature", txSig);
 
-      let taskAccount = await program.account.task.fetch(taskOnePda);
       const taskVaultAccountInfo = await connection.getAccountInfo(
         taskOneVault
       );
-      console.log("Task One Vault Bump", taskAccount.taskVaultBump);
 
       // Assert that the account exists
       expect(taskVaultAccountInfo).to.not.be.null;
