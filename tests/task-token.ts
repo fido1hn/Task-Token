@@ -1,11 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program, BN } from "@coral-xyz/anchor";
-import {
-  LAMPORTS_PER_SOL,
-  PublicKey,
-  SendTransactionError,
-  SystemProgram,
-} from "@solana/web3.js";
+import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 import {
   Account,
   createMint,
@@ -14,6 +9,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { TaskToken } from "../target/types/task_token";
+import { expect } from "chai";
 
 describe("task-token", () => {
   // Configure the client to use the local cluster.
@@ -176,7 +172,7 @@ describe("task-token", () => {
     // Add your test here.
     // Admin can create a task token contract
     try {
-      const tx = await program.methods
+      const initializeInstruction = await program.methods
         .initialize(150)
         .accountsPartial({
           config: configPda,
@@ -188,8 +184,28 @@ describe("task-token", () => {
           systemProgram,
         })
         .signers([admin])
-        .rpc();
-      console.log("Your transaction signature", tx);
+        .instruction();
+
+      const blockhash = await connection.getLatestBlockhash();
+
+      const tx = new anchor.web3.Transaction({
+        feePayer: admin.publicKey,
+        blockhash: blockhash.blockhash,
+        lastValidBlockHeight: blockhash.lastValidBlockHeight,
+      }).add(initializeInstruction);
+
+      const txSig = await anchor.web3.sendAndConfirmTransaction(
+        connection,
+        tx,
+        [admin]
+      );
+
+      console.log("Your transaction signature", txSig);
+
+      const configAccount = await program.account.config.fetch(configPda);
+      expect(configAccount.admin.toString()).to.equal(
+        admin.publicKey.toString()
+      );
     } catch (error) {
       console.log(`an error occured: ${error}`);
     }
@@ -224,7 +240,10 @@ describe("task-token", () => {
         })
         .signers([taskOwner])
         .rpc();
+
       console.log("Your transaction signature", tx);
+
+      const taskOneAccount = await program.account.task.fetch(taskOnePda);
     } catch (error) {
       console.log(`an error occured: ${error}`);
     }
@@ -235,14 +254,10 @@ describe("task-token", () => {
     // Add your test here.
     // task owner create a task
 
-    const taskAccount = await program.account.task.fetch(taskOnePda);
+    // const taskAccount = await program.account.task.fetch(taskOnePda);
 
-    [taskOneVault] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from("task_vault"),
-        taskOnePda.toBuffer(),
-        Buffer.from([taskAccount.taskVaultBump]),
-      ],
+    let [taskOneVault, bump] = PublicKey.findProgramAddressSync(
+      [Buffer.from("task_vault"), taskOnePda.toBuffer()],
       program.programId
     );
     try {
