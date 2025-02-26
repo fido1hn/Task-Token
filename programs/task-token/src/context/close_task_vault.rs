@@ -2,7 +2,8 @@ use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{
-        mint_to, transfer_checked, Mint, MintTo, TokenAccount, TokenInterface, TransferChecked,
+        close_account, mint_to, transfer_checked, CloseAccount, Mint, MintTo, TokenAccount,
+        TokenInterface, TransferChecked,
     },
 };
 
@@ -12,7 +13,7 @@ use crate::{
 };
 
 #[derive(Accounts)]
-pub struct CloseTask<'info> {
+pub struct CloseTaskVault<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
     #[account(mut)]
@@ -30,8 +31,10 @@ pub struct CloseTask<'info> {
     )]
     pub task: Box<Account<'info, Task>>,
     #[account(
+      mut,
       seeds = [b"submission", submission.developer.as_ref(), task_vault_info.task.to_bytes().as_ref()],
       bump = submission.bump,
+      close = signer
     )]
     pub submission: Box<Account<'info, Submission>>,
     // task vault
@@ -78,14 +81,14 @@ pub struct CloseTask<'info> {
     pub system_program: Program<'info, System>,
 }
 
-// Should only pay developer & mint task tokens
-impl<'info> CloseTask<'info> {
+impl<'info> CloseTaskVault<'info> {
     pub fn close_task(&mut self) -> Result<()> {
         // check project owner is signer
         require_eq!(self.signer.key(), self.task.owner.key());
 
         self.pay_developer()?;
         self.mint_task_tokens()?;
+        self.close_task_vault()?;
 
         // emit the task completed event
         emit!(TaskCompleted {
@@ -145,6 +148,25 @@ impl<'info> CloseTask<'info> {
         };
 
         mint_to(cpi_ctx, amount)?;
+
+        Ok(())
+    }
+
+    fn close_task_vault(&mut self) -> Result<()> {
+        let cpi_program = self.token_program.to_account_info();
+        let cpi_accounts = CloseAccount {
+            account: self.task_vault.to_account_info(),
+            destination: self.signer.to_account_info(),
+            authority: self.config.to_account_info(),
+        };
+
+        let binding = self.config.admin.key();
+        let seeds = &[b"config", binding.as_ref()];
+        let signer_seeds = &[&seeds[..]];
+
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+
+        close_account(cpi_ctx)?;
 
         Ok(())
     }
