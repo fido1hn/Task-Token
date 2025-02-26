@@ -72,15 +72,12 @@ describe("task-token", () => {
         admin.publicKey,
         100 * LAMPORTS_PER_SOL
       );
-
       const latestBlockHash = await connection.getLatestBlockhash();
-
       const tx = await connection.confirmTransaction({
         blockhash: latestBlockHash.blockhash,
         lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
         signature: txSig,
       });
-
       console.log(
         `Success! Check out your TX here: https://explorer.solana.com/tx/${txSig}?cluster=Localnet`
       );
@@ -90,15 +87,12 @@ describe("task-token", () => {
         taskOwner.publicKey,
         100 * LAMPORTS_PER_SOL
       );
-
       const latestBlockHash2 = await connection.getLatestBlockhash();
-
       const tx2 = await connection.confirmTransaction({
         blockhash: latestBlockHash2.blockhash,
         lastValidBlockHeight: latestBlockHash2.lastValidBlockHeight,
         signature: txSig2,
       });
-
       console.log(
         `Success! Check out your TX here: https://explorer.solana.com/tx/${txSig2}?cluster=Localnet`
       );
@@ -108,15 +102,12 @@ describe("task-token", () => {
         developer.publicKey,
         10 * LAMPORTS_PER_SOL
       );
-
       const latestBlockHash3 = await connection.getLatestBlockhash();
-
       const tx3 = await connection.confirmTransaction({
         blockhash: latestBlockHash3.blockhash,
         lastValidBlockHeight: latestBlockHash3.lastValidBlockHeight,
         signature: txSig3,
       });
-
       console.log(
         `Success! Check out your TX here: https://explorer.solana.com/tx/${txSig2}?cluster=Localnet`
       );
@@ -147,7 +138,6 @@ describe("task-token", () => {
         admin,
         100_000_000
       );
-
       console.log(
         `Success! Check out your TX here: https://explorer.solana.com/tx/${tx2Sig}?cluster=Localnet`
       );
@@ -155,7 +145,6 @@ describe("task-token", () => {
       let taskOwnerbalance = await connection.getTokenAccountBalance(
         taskOwnerAta.address
       );
-
       let developerBalance = await connection.getBalance(developer.publicKey);
 
       console.log(`TaskOwner balance is: ${taskOwnerbalance.value.uiAmount}`);
