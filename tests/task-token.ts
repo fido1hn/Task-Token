@@ -358,24 +358,6 @@ describe("task-token", () => {
 
   // Happy Path - Task Owner can pay developer
   it("Task owner can pay developer", async () => {
-    developerPaymentAta = await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      developer,
-      paymentMint,
-      developer.publicKey
-    );
-
-    console.log("Developer payment ata", developerPaymentAta.address);
-
-    developerTaskTokenAta = await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      developer,
-      taskTokenMint,
-      developer.publicKey
-    );
-
-    console.log("Developer task token ata", developerTaskTokenAta.address);
-
     try {
       const payDeveloperInstruction = await program.methods
         .payDeveloper()
@@ -388,8 +370,6 @@ describe("task-token", () => {
           taskTokenMint,
           paymentMint,
           developer: developer.publicKey,
-          developerTaskTokenAta: developerTaskTokenAta.address,
-          developerPaymentAta: developerPaymentAta.address,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
           tokenProgram,
           systemProgram,
@@ -410,6 +390,23 @@ describe("task-token", () => {
         [taskOwner]
       );
       console.log("Your transaction signature", txSig);
+
+      developerPaymentAta = await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        developer,
+        paymentMint,
+        developer.publicKey
+      );
+
+      developerTaskTokenAta = await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        developer,
+        taskTokenMint,
+        developer.publicKey
+      );
+
+      expect(Number(developerPaymentAta.amount)).greaterThan(10_000_000);
+      expect(Number(developerTaskTokenAta.amount)).equal(1_000_000);
     } catch (error) {
       console.log(`an error occured: ${error}`);
     }
