@@ -99,11 +99,16 @@ impl<'info> PayDeveloper<'info> {
             from: self.task_vault.to_account_info(),
             mint: self.payment_mint.to_account_info(),
             to: self.developer_payment_ata.to_account_info(),
-            authority: self.config.to_account_info(),
+            authority: self.task.to_account_info(),
         };
 
-        let binding = self.config.admin.key();
-        let seeds = &[b"config", binding.as_ref(), &[self.config.config_bump]];
+        let binding = self.task.key();
+        let seeds = &[
+            b"task",
+            binding.as_ref(),
+            &self.task.title.as_bytes(),
+            &[self.task.task_bump],
+        ];
         let signer_seeds = &[&seeds[..]];
 
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
@@ -122,8 +127,13 @@ impl<'info> PayDeveloper<'info> {
             authority: self.config.to_account_info(),
         };
 
-        let binding = self.config.admin.key();
-        let seeds = &[b"config", binding.as_ref(), &[self.config.config_bump]];
+        let binding = self.task.key();
+        let seeds = &[
+            b"task",
+            binding.as_ref(),
+            &self.task.title.as_bytes(),
+            &[self.task.task_bump],
+        ];
         let signer_seeds = &[&seeds[..]];
 
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
