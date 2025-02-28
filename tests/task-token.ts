@@ -23,15 +23,18 @@ describe("task-token", () => {
 
   // Protocol admin
   const admin = anchor.web3.Keypair.generate();
+  console.log("admin publicKey: ", admin.publicKey.toString());
 
   // taskOwner keypair
   const taskOwner = anchor.web3.Keypair.generate();
+  console.log("taskOwner publicKey: ", taskOwner.publicKey.toString());
 
   // taskOwner Payment ATA
   let taskOwnerAta: Account;
 
   // developer keypair
   const developer = anchor.web3.Keypair.generate();
+  console.log("developer publicKey: ", developer.publicKey.toString());
 
   // developer Payment ATA
   let developerPaymentAta: Account;
@@ -44,20 +47,24 @@ describe("task-token", () => {
     [Buffer.from("config"), admin.publicKey.toBuffer()],
     program.programId
   );
+  console.log("Config publicKey: ", configPda.toString());
+
   // Config Vault
   const [vaultPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("config"), configPda.toBuffer()],
     program.programId
   );
+
   // Task Token Mint
   const [taskTokenMint] = PublicKey.findProgramAddressSync(
     [Buffer.from("task_token"), configPda.toBuffer()],
     program.programId
   );
+
   // Payment Mint:
   let paymentMint: PublicKey;
   let taskOnePda: PublicKey;
-  let taskOneVault: PublicKey;
+  let taskOneVault: Account;
   let taskOneSubmissionPda: PublicKey;
 
   // Token program
@@ -100,7 +107,7 @@ describe("task-token", () => {
       // Airdrop sol to developer
       const txSig3 = await provider.connection.requestAirdrop(
         developer.publicKey,
-        10 * LAMPORTS_PER_SOL
+        100 * LAMPORTS_PER_SOL
       );
       const latestBlockHash3 = await connection.getLatestBlockhash();
       const tx3 = await connection.confirmTransaction({
@@ -129,7 +136,7 @@ describe("task-token", () => {
         taskOwner.publicKey
       );
 
-      // Airdrop some payment mint tokens to the taskOwner
+      // Airdrop some payment mint tokens to the taskOwnerAta
       const tx2Sig = await mintTo(
         provider.connection,
         admin,
@@ -210,6 +217,7 @@ describe("task-token", () => {
       ],
       program.programId
     );
+
     try {
       let title = "Task-1: Edit README";
       let description = "Correct the spelling mistake in the README";
@@ -252,11 +260,6 @@ describe("task-token", () => {
 
   // Happy path - create task
   it("Can create a task vault!", async () => {
-    [taskOneVault] = PublicKey.findProgramAddressSync(
-      [Buffer.from("task_vault"), taskOnePda.toBuffer()],
-      program.programId
-    );
-
     try {
       const createTaskVaultInstruction = await program.methods
         .createTaskVault()
@@ -266,7 +269,7 @@ describe("task-token", () => {
           paymentMint,
           signerPaymentMintAta: taskOwnerAta.address,
           signer: taskOwner.publicKey,
-          taskVault: taskOneVault,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
           tokenProgram,
           systemProgram: systemProgram,
         })
@@ -288,13 +291,16 @@ describe("task-token", () => {
 
       console.log("Your transaction signature", txSig);
 
-      const taskVaultAccountInfo = await connection.getAccountInfo(
-        taskOneVault
+      taskOneVault = await getOrCreateAssociatedTokenAccount(
+        connection,
+        taskOwner,
+        paymentMint,
+        taskOnePda,
+        true
       );
 
       // Assert that the account exists
-      expect(taskVaultAccountInfo).to.not.be.null;
-      expect(taskVaultAccountInfo).to.not.be.undefined;
+      expect(Number(taskOneVault.amount)).greaterThan(10_000_000);
     } catch (error) {
       console.log(`an error occured: ${error}`);
     }
@@ -311,9 +317,9 @@ describe("task-token", () => {
       ],
       program.programId
     );
+
     try {
       let commit_url = "http://changes-made-to-readme.git";
-
       const submissionInstruction = await program.methods
         .submitTask(commit_url)
         .accountsPartial({
@@ -350,14 +356,16 @@ describe("task-token", () => {
     }
   });
 
-  // Happy Path - Task Owner can close task by paying developer
-  it("Task owner can close task by paying developer", async () => {
+  // Happy Path - Task Owner can pay developer
+  it("Task owner can pay developer", async () => {
     developerPaymentAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       developer,
       paymentMint,
       developer.publicKey
     );
+
+    console.log("Developer payment ata", developerPaymentAta.address);
 
     developerTaskTokenAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
@@ -366,20 +374,17 @@ describe("task-token", () => {
       developer.publicKey
     );
 
-    let [taskOneVaultInfo] = PublicKey.findProgramAddressSync(
-      [Buffer.from("task_vault_info"), taskOnePda.toBuffer()],
-      program.programId
-    );
+    console.log("Developer task token ata", developerTaskTokenAta.address);
 
     try {
-      const closeTaskInstruction = await program.methods
-        .closeTask()
+      const payDeveloperInstruction = await program.methods
+        .payDeveloper()
         .accountsPartial({
+          signer: taskOwner.publicKey,
           config: configPda,
           submission: taskOneSubmissionPda,
           task: taskOnePda,
-          taskVault: taskOneVault,
-          taskVaultInfo: taskOneVaultInfo,
+          taskVault: taskOneVault.address,
           taskTokenMint,
           paymentMint,
           developer: developer.publicKey,
@@ -397,7 +402,7 @@ describe("task-token", () => {
         feePayer: taskOwner.publicKey,
         blockhash: blockhash.blockhash,
         lastValidBlockHeight: blockhash.lastValidBlockHeight,
-      }).add(closeTaskInstruction);
+      }).add(payDeveloperInstruction);
 
       const txSig = await anchor.web3.sendAndConfirmTransaction(
         connection,
