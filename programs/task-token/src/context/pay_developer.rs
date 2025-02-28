@@ -127,13 +127,8 @@ impl<'info> PayDeveloper<'info> {
             authority: self.config.to_account_info(),
         };
 
-        let binding = self.task.key();
-        let seeds = &[
-            b"task",
-            binding.as_ref(),
-            &self.task.title.as_bytes(),
-            &[self.task.task_bump],
-        ];
+        let binding = self.config.key();
+        let seeds = &[b"task_token", binding.as_ref(), &[self.config.config_bump]];
         let signer_seeds = &[&seeds[..]];
 
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
