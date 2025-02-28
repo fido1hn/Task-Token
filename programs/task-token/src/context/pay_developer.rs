@@ -106,7 +106,7 @@ impl<'info> PayDeveloper<'info> {
         let seeds = &[
             b"task",
             binding.as_ref(),
-            &self.task.title.as_bytes(),
+            self.task.title.as_bytes(),
             &[self.task.task_bump],
         ];
         let signer_seeds = &[&seeds[..]];

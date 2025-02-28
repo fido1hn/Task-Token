@@ -43,7 +43,7 @@ pub mod task_token {
         ctx.accounts.pay_developer()
     }
 
-    pub fn close_task_vault(ctx: Context<CloseTaskVault>) -> Result<()> {
+    pub fn close_task_account_vault(ctx: Context<CloseTaskAccountVault>) -> Result<()> {
         ctx.accounts.close_task_vault()
     }
 

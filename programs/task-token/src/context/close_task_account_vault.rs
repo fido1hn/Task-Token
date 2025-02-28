@@ -1,45 +1,41 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{close_account, CloseAccount, TokenAccount, TokenInterface};
 
-use crate::state::{Config, TaskVaultInfo};
+use crate::state::Task;
 
 #[derive(Accounts)]
-pub struct CloseTaskVault<'info> {
+pub struct CloseTaskAccountVault<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
     #[account(
-      seeds = [b"config", config.admin.key().as_ref()],
-      bump = config.config_bump
+      mut,
+      seeds = [b"task", task.title.as_bytes(), task.owner.key().as_ref()],
+      bump = task.task_bump,
+      close = signer
     )]
-    pub config: Box<Account<'info, Config>>,
+    pub task: Box<Account<'info, Task>>,
     // task vault
-    #[account(
-      mut,
-      seeds = [b"task_vault", task_vault_info.task.to_bytes().as_ref()],
-      bump = task_vault_info.task_vault_bump,
-    )]
+    #[account(mut)]
     pub task_vault: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(
-      mut,
-      seeds = [b"task_vault_info", task_vault_info.task.to_bytes().as_ref()],
-      bump = task_vault_info.task_vault_info_bump,
-      close = signer,
-    )]
-    pub task_vault_info: Box<Account<'info, TaskVaultInfo>>,
     pub token_program: Interface<'info, TokenInterface>,
 }
 
-impl<'info> CloseTaskVault<'info> {
+impl<'info> CloseTaskAccountVault<'info> {
     pub fn close_task_vault(&mut self) -> Result<()> {
         let cpi_program = self.token_program.to_account_info();
         let cpi_accounts = CloseAccount {
             account: self.task_vault.to_account_info(),
             destination: self.signer.to_account_info(),
-            authority: self.config.to_account_info(),
+            authority: self.task.to_account_info(),
         };
 
-        let binding = self.config.admin.key();
-        let seeds = &[b"config", binding.as_ref()];
+        let binding = self.task.key();
+        let seeds = &[
+            b"task",
+            binding.as_ref(),
+            self.task.title.as_bytes(),
+            &[self.task.task_bump],
+        ];
         let signer_seeds = &[&seeds[..]];
 
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
