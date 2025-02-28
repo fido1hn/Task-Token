@@ -8,11 +8,11 @@ use anchor_spl::{
 
 use crate::{
     events::TaskCompleted,
-    state::{Config, Submission, Task, TaskVaultInfo},
+    state::{Config, Submission, Task},
 };
 
 #[derive(Accounts)]
-pub struct CloseTask<'info> {
+pub struct PayDeveloper<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
     #[account(mut)]
@@ -23,29 +23,22 @@ pub struct CloseTask<'info> {
     )]
     pub config: Box<Account<'info, Config>>,
     #[account(
-      mut,
       seeds = [b"task", task.title.as_bytes(), task.owner.key().as_ref()],
       bump = task.task_bump,
-      close = signer
     )]
     pub task: Box<Account<'info, Task>>,
     #[account(
-      seeds = [b"submission", submission.developer.as_ref(), task_vault_info.task.to_bytes().as_ref()],
+      seeds = [b"submission", submission.developer.as_ref(), submission.task.as_ref()],
       bump = submission.bump,
     )]
     pub submission: Box<Account<'info, Submission>>,
     // task vault
     #[account(
       mut,
-      seeds = [b"task_vault", task.key().as_ref()],
-      bump = task_vault_info.task_vault_bump,
+      associated_token::mint = payment_mint,
+      associated_token::authority = task,
     )]
     pub task_vault: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(
-      seeds = [b"task_vault_info", task.key().as_ref()],
-      bump = task_vault_info.task_vault_info_bump,
-    )]
-    pub task_vault_info: Box<Account<'info, TaskVaultInfo>>,
     // developer payment ata
     #[account(
       init_if_needed,
@@ -77,12 +70,12 @@ pub struct CloseTask<'info> {
 }
 
 // Should only pay developer & mint task tokens
-impl<'info> CloseTask<'info> {
-    pub fn close_task(&mut self) -> Result<()> {
+impl<'info> PayDeveloper<'info> {
+    pub fn pay_developer(&mut self) -> Result<()> {
         // check project owner is signer
         require_eq!(self.signer.key(), self.task.owner.key());
 
-        self.pay_developer()?;
+        self.transfer_payment()?;
         self.mint_task_tokens()?;
 
         // emit the task completed event
@@ -99,7 +92,7 @@ impl<'info> CloseTask<'info> {
         Ok(())
     }
 
-    fn pay_developer(&mut self) -> Result<()> {
+    fn transfer_payment(&mut self) -> Result<()> {
         // send payment from vault to developer
         let cpi_program = self.token_program.to_account_info();
         let cpi_accounts = TransferChecked {
@@ -110,7 +103,7 @@ impl<'info> CloseTask<'info> {
         };
 
         let binding = self.config.admin.key();
-        let seeds = &[b"config", binding.as_ref()];
+        let seeds = &[b"config", binding.as_ref(), &[self.config.config_bump]];
         let signer_seeds = &[&seeds[..]];
 
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
@@ -130,7 +123,7 @@ impl<'info> CloseTask<'info> {
         };
 
         let binding = self.config.admin.key();
-        let seeds = &[b"config", binding.as_ref()];
+        let seeds = &[b"config", binding.as_ref(), &[self.config.config_bump]];
         let signer_seeds = &[&seeds[..]];
 
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);

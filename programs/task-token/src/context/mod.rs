@@ -10,8 +10,8 @@ pub use create_task_vault::*;
 pub mod submit_task;
 pub use submit_task::*;
 
-pub mod close_task;
-pub use close_task::*;
+pub mod pay_developer;
+pub use pay_developer::*;
 
 pub mod close_task_vault;
 pub use close_task_vault::*;

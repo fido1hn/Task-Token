@@ -39,8 +39,8 @@ pub mod task_token {
         ctx.accounts.submit_task(link, ctx.bumps)
     }
 
-    pub fn close_task(ctx: Context<CloseTask>) -> Result<()> {
-        ctx.accounts.close_task()
+    pub fn pay_developer(ctx: Context<PayDeveloper>) -> Result<()> {
+        ctx.accounts.pay_developer()
     }
 
     pub fn close_task_vault(ctx: Context<CloseTaskVault>) -> Result<()> {
