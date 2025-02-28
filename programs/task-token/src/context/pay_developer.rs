@@ -57,6 +57,7 @@ pub struct PayDeveloper<'info> {
     pub developer_task_token_ata: Box<InterfaceAccount<'info, TokenAccount>>,
     // task token mint
     #[account(
+      mut,
       seeds = [b"task_token", config.key().as_ref()],
       bump = config.mint_bump
     )]
