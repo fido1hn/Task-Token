@@ -1,9 +1,10 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::{
-    transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked,
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
 
-use crate::state::{Config, Task, TaskVaultInfo};
+use crate::state::{Config, Task};
 
 #[derive(Accounts)]
 pub struct CreateTaskVault<'info> {
@@ -26,33 +27,17 @@ pub struct CreateTaskVault<'info> {
     #[account(
       init,
       payer = signer,
-      seeds = [b"task_vault", task.key().as_ref()],
-      bump,
-      token::mint = payment_mint,
-      token::authority = config,
+      associated_token::mint = payment_mint,
+      associated_token::authority = task,
     )]
     pub task_vault: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(
-      init,
-      payer = signer,
-      space = 8 + TaskVaultInfo::INIT_SPACE,
-      seeds = [b"task_vault_info", task.key().as_ref()],
-      bump
-    )]
-    pub task_vault_info: Account<'info, TaskVaultInfo>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
 }
 
 impl<'info> CreateTaskVault<'info> {
-    pub fn create_task_vault(&mut self, bump: CreateTaskVaultBumps) -> Result<()> {
-        // Save bump; Needs task account to get Task Vault bump
-        self.task_vault_info.set_inner(TaskVaultInfo {
-            task: self.task.key(),
-            task_vault_bump: bump.task_vault,
-            task_vault_info_bump: bump.task_vault_info,
-        });
-
+    pub fn create_task_vault(&mut self, _bump: CreateTaskVaultBumps) -> Result<()> {
         // Transfer to the task vault
         let cpi_program = self.token_program.to_account_info();
         let cpi_accounts = TransferChecked {
