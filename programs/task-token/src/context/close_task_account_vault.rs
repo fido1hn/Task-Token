@@ -29,11 +29,10 @@ impl<'info> CloseTaskAccountVault<'info> {
             authority: self.task.to_account_info(),
         };
 
-        let binding = self.task.key();
         let seeds = &[
             b"task",
-            binding.as_ref(),
             self.task.title.as_bytes(),
+            self.task.owner.as_ref(),
             &[self.task.task_bump],
         ];
         let signer_seeds = &[&seeds[..]];
