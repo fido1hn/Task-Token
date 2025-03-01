@@ -356,7 +356,7 @@ describe("task-token", () => {
     }
   });
 
-  // Happy Path - Task Owner can pay developer
+  // Happy path - Task Owner can pay developer
   it("Task owner can pay developer", async () => {
     try {
       const payDeveloperInstruction = await program.methods
@@ -409,6 +409,47 @@ describe("task-token", () => {
       expect(Number(developerTaskTokenAta.amount)).equal(1_000_000);
     } catch (error) {
       console.log(`an error occured: ${error}`);
+    }
+  });
+
+  // Happy path - Task owner can close task account & task vault
+  it("Task owner can close task account and task vault", async () => {
+    try {
+      const closeTaskAccountVaultInstruction = await program.methods
+        .closeTaskAccountVault()
+        .accountsPartial({
+          signer: taskOwner.publicKey,
+          task: taskOnePda,
+          taskVault: taskOneVault.address,
+          tokenProgram,
+        })
+        .signers([taskOwner])
+        .instruction();
+
+      const blockhash = await connection.getLatestBlockhash();
+      const tx = new anchor.web3.Transaction({
+        feePayer: taskOwner.publicKey,
+        blockhash: blockhash.blockhash,
+        lastValidBlockHeight: blockhash.lastValidBlockHeight,
+      }).add(closeTaskAccountVaultInstruction);
+
+      const txSig = await anchor.web3.sendAndConfirmTransaction(
+        connection,
+        tx,
+        [taskOwner]
+      );
+
+      console.log("Your transaction signature", txSig);
+
+      // Check if the task account is closed
+      try {
+        await program.account.task.fetch(taskOnePda);
+        expect.fail("Task account should have been closed");
+      } catch (error: any) {
+        expect(error.message).to.include("Account does not exist");
+      }
+    } catch (error) {
+      console.log("An error occured", error);
     }
   });
 });
