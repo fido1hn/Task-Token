@@ -164,7 +164,7 @@ describe("task-token", () => {
   });
 
   // Happy path - initialize contract
-  it("Is Contract initialized!", async () => {
+  it("Admin can initialize smart contract!", async () => {
     // Add your test here.
     // Admin can create a task token contract
     try {
@@ -206,7 +206,7 @@ describe("task-token", () => {
   });
 
   // Happy path - create task
-  it("Can create a task!", async () => {
+  it("Task owner can create a task!", async () => {
     // Add your test here.
     // task owner create a task
     [taskOnePda] = PublicKey.findProgramAddressSync(
@@ -259,7 +259,7 @@ describe("task-token", () => {
   });
 
   // Happy path - create task
-  it("Can create a task vault!", async () => {
+  it("Task owner can create a task vault!", async () => {
     try {
       const createTaskVaultInstruction = await program.methods
         .createTaskVault()
@@ -307,7 +307,7 @@ describe("task-token", () => {
   });
 
   // Happy path - submit task
-  it("Can submit a task!", async () => {
+  it("Developer can submit a task!", async () => {
     // task submission PDA for task one
     [taskOneSubmissionPda] = PublicKey.findProgramAddressSync(
       [
@@ -450,6 +450,43 @@ describe("task-token", () => {
       }
     } catch (error) {
       console.log("An error occured", error);
+    }
+  });
+
+  // Happy path - Developer can close submission account
+  it("Developer can close submission account", async () => {
+    try {
+      const closeSubmissionInstruction = await program.methods
+        .closeSubmission()
+        .accountsPartial({
+          signer: developer.publicKey,
+          config: configPda,
+          submission: taskOneSubmissionPda,
+          developerTaskTokenAta: developerTaskTokenAta.address,
+          taskTokenMint,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          tokenProgram,
+          systemProgram,
+        })
+        .signers([developer])
+        .instruction();
+
+      const blockhash = await connection.getLatestBlockhash();
+      const tx = new anchor.web3.Transaction({
+        feePayer: developer.publicKey,
+        blockhash: blockhash.blockhash,
+        lastValidBlockHeight: blockhash.lastValidBlockHeight,
+      }).add(closeSubmissionInstruction);
+
+      const txSig = await anchor.web3.sendAndConfirmTransaction(
+        connection,
+        tx,
+        [developer]
+      );
+
+      console.log("Your transaction signature", txSig);
+    } catch (error) {
+      console.log("an error occured", error);
     }
   });
 });
