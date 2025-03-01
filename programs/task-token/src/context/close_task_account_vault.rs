@@ -22,6 +22,8 @@ pub struct CloseTaskAccountVault<'info> {
 
 impl<'info> CloseTaskAccountVault<'info> {
     pub fn close_task_vault(&mut self) -> Result<()> {
+        require_eq!(self.signer.key(), self.task.owner);
+
         let cpi_program = self.token_program.to_account_info();
         let cpi_accounts = CloseAccount {
             account: self.task_vault.to_account_info(),
