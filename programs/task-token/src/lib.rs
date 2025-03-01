@@ -9,7 +9,7 @@ pub use state::*;
 pub mod errors;
 pub mod events;
 
-declare_id!("6irtasT64kUUv3558PXTcg3BUWLgWXjx2efQJXMEz2UE");
+declare_id!("5sD5JB67WPjJkZuNDDVVv3owPogc7dft8yZc76ccqB7A");
 
 #[program]
 pub mod task_token {
