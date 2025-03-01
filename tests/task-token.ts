@@ -23,18 +23,24 @@ describe("task-token", () => {
 
   // Protocol admin
   const admin = anchor.web3.Keypair.generate();
-  console.log("admin publicKey: ", admin.publicKey.toString());
 
   // taskOwner keypair
   const taskOwner = anchor.web3.Keypair.generate();
-  console.log("taskOwner publicKey: ", taskOwner.publicKey.toString());
+
+  // taskTwoOwner keypair
+  const taskTwoOwner = anchor.web3.Keypair.generate();
 
   // taskOwner Payment ATA
   let taskOwnerAta: Account;
 
+  // taskOwner Payment ATA
+  let taskTwoOwnerAta: Account;
+
   // developer keypair
   const developer = anchor.web3.Keypair.generate();
-  console.log("developer publicKey: ", developer.publicKey.toString());
+
+  // developer keypair
+  const developerTwo = anchor.web3.Keypair.generate();
 
   // developer Payment ATA
   let developerPaymentAta: Account;
@@ -42,12 +48,17 @@ describe("task-token", () => {
   // developer Task Token ATA
   let developerTaskTokenAta: Account;
 
+  // developer Payment ATA
+  let developerTwoPaymentAta: Account;
+
+  // developer Task Token ATA
+  let developerTwoTaskTokenAta: Account;
+
   // Config PDA
   const [configPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("config"), admin.publicKey.toBuffer()],
     program.programId
   );
-  console.log("Config publicKey: ", configPda.toString());
 
   // Config Vault
   const [vaultPda] = PublicKey.findProgramAddressSync(
@@ -85,9 +96,6 @@ describe("task-token", () => {
         lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
         signature: txSig,
       });
-      console.log(
-        `Success! Check out your TX here: https://explorer.solana.com/tx/${txSig}?cluster=Localnet`
-      );
 
       // Airdrop sol to taskOwner
       const txSig2 = await provider.connection.requestAirdrop(
@@ -100,9 +108,6 @@ describe("task-token", () => {
         lastValidBlockHeight: latestBlockHash2.lastValidBlockHeight,
         signature: txSig2,
       });
-      console.log(
-        `Success! Check out your TX here: https://explorer.solana.com/tx/${txSig2}?cluster=Localnet`
-      );
 
       // Airdrop sol to developer
       const txSig3 = await provider.connection.requestAirdrop(
@@ -115,9 +120,6 @@ describe("task-token", () => {
         lastValidBlockHeight: latestBlockHash3.lastValidBlockHeight,
         signature: txSig3,
       });
-      console.log(
-        `Success! Check out your TX here: https://explorer.solana.com/tx/${txSig2}?cluster=Localnet`
-      );
 
       // Create protocol payment mint
       paymentMint = await createMint(
@@ -144,19 +146,6 @@ describe("task-token", () => {
         taskOwnerAta.address,
         admin,
         100_000_000
-      );
-      console.log(
-        `Success! Check out your TX here: https://explorer.solana.com/tx/${tx2Sig}?cluster=Localnet`
-      );
-
-      let taskOwnerbalance = await connection.getTokenAccountBalance(
-        taskOwnerAta.address
-      );
-      let developerBalance = await connection.getBalance(developer.publicKey);
-
-      console.log(`TaskOwner balance is: ${taskOwnerbalance.value.uiAmount}`);
-      console.log(
-        `Developer Sol balance is: ${developerBalance / LAMPORTS_PER_SOL}`
       );
     } catch (e) {
       console.error(`Oops, something went wrong: ${e}`);
@@ -195,8 +184,6 @@ describe("task-token", () => {
         tx,
         [admin]
       );
-
-      console.log("Your transaction signature", txSig);
 
       const configAccount = await program.account.config.fetch(configPda);
       expect(configAccount.admin.toString()).equal(admin.publicKey.toString());
@@ -249,8 +236,6 @@ describe("task-token", () => {
         [taskOwner]
       );
 
-      console.log("Your transaction signature", txSig);
-
       const taskOneAccount = await program.account.task.fetch(taskOnePda);
       expect(taskOneAccount.description).equal(description);
     } catch (error) {
@@ -288,8 +273,6 @@ describe("task-token", () => {
         tx,
         [taskOwner]
       );
-
-      console.log("Your transaction signature", txSig);
 
       taskOneVault = await getOrCreateAssociatedTokenAccount(
         connection,
@@ -344,8 +327,6 @@ describe("task-token", () => {
         [developer]
       );
 
-      console.log("Your transaction signature", txSig);
-
       const submissionAccount = await program.account.submission.fetch(
         taskOneSubmissionPda
       );
@@ -389,7 +370,6 @@ describe("task-token", () => {
         tx,
         [taskOwner]
       );
-      console.log("Your transaction signature", txSig);
 
       developerPaymentAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
@@ -439,8 +419,6 @@ describe("task-token", () => {
         [taskOwner]
       );
 
-      console.log("Your transaction signature", txSig);
-
       // Check if the task account is closed
       try {
         await program.account.task.fetch(taskOnePda);
@@ -483,8 +461,6 @@ describe("task-token", () => {
         tx,
         [developer]
       );
-
-      console.log("Your transaction signature", txSig);
     } catch (error) {
       console.log("an error occured", error);
     }
