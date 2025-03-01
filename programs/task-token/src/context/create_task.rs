@@ -4,7 +4,7 @@ use anchor_lang::{
 };
 
 use crate::{
-    errors::CustomError,
+    errors::TaskTokenError,
     state::{Config, Task},
 };
 
@@ -46,9 +46,19 @@ impl<'info> CreateTask<'info> {
         bumps: CreateTaskBumps,
     ) -> Result<()> {
         // Check difficulty
-        require!(difficulty <= 2, CustomError::InvalidDifficulty);
+        require!(difficulty <= 2, TaskTokenError::InvalidDifficulty);
         // Check payment >= $20
         require_gte!(pay, 20);
+
+        // Check the title length
+        if title.len() > 50 {
+            return Err(TaskTokenError::TitleTooLong.into());
+        }
+
+        // Check the description length
+        if description.len() > 50 {
+            return Err(TaskTokenError::DescriptionTooLong.into());
+        }
 
         // Collect listing fee
         let cpi_program = self.system_program.to_account_info();
