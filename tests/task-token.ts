@@ -152,9 +152,8 @@ describe("task-token", () => {
     }
   });
 
-  // Happy path - initialize contract
+  // Happy path - initilaze smart contract
   it("Admin can initialize smart contract!", async () => {
-    // Add your test here.
     // Admin can create a task token contract
     try {
       const initializeInstruction = await program.methods
@@ -189,6 +188,50 @@ describe("task-token", () => {
       expect(configAccount.admin.toString()).equal(admin.publicKey.toString());
     } catch (error) {
       console.log(`an error occured: ${error}`);
+    }
+  });
+
+  // Unhappy path - Cannot reinitialize already initialized config
+  it("Fails when trying to initialize an already initialized config", async () => {
+    try {
+      // Create the initialization instruction using accountsPartial
+      const initializeInstruction = await program.methods
+        .initialize(150)
+        .accountsPartial({
+          config: configPda,
+          admin: admin.publicKey,
+          paymentMint,
+          vault: vaultPda,
+          taskTokenMint,
+          tokenProgram,
+          systemProgram,
+        })
+        .signers([admin])
+        .instruction();
+
+      // Get the latest blockhash to build the transaction
+      const { blockhash, lastValidBlockHeight } =
+        await connection.getLatestBlockhash();
+
+      // Build the transaction with the instruction
+      const tx = new anchor.web3.Transaction({
+        feePayer: admin.publicKey,
+        blockhash,
+        lastValidBlockHeight,
+      }).add(initializeInstruction);
+
+      // Attempt to send and confirm the transaction
+      const txSig = await anchor.web3.sendAndConfirmTransaction(
+        connection,
+        tx,
+        [admin]
+      );
+      expect.fail(
+        "The instruction should have failed because the config account already exists."
+      );
+    } catch (error) {
+      // Check that the error indicates the account already exists or a related issue.
+      expect(error.message).to.include("Transaction simulation failed");
     }
   });
 
