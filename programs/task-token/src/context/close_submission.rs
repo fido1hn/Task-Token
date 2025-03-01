@@ -30,6 +30,7 @@ pub struct CloseSubmission<'info> {
     )]
     pub developer_task_token_ata: InterfaceAccount<'info, TokenAccount>,
     #[account(
+      mut,
       seeds = [b"task_token", config.key().as_ref()],
       bump = config.mint_bump,
     )]
@@ -41,6 +42,8 @@ pub struct CloseSubmission<'info> {
 
 impl<'info> CloseSubmission<'info> {
     pub fn close_submission(&mut self) -> Result<()> {
+        require_eq!(self.signer.key(), self.submission.developer);
+
         // Mint task tokens to the developer as an incentive
         let cpi_program = self.token_program.to_account_info();
         let cpi_accounts = MintTo {
@@ -49,13 +52,16 @@ impl<'info> CloseSubmission<'info> {
             authority: self.config.to_account_info(),
         };
 
-        let binding = self.config.admin.key();
-        let seeds = &[b"config", binding.as_ref()];
+        let seeds = &[
+            b"config",
+            self.config.admin.as_ref(),
+            &[self.config.config_bump],
+        ];
         let signer_seeds = &[&seeds[..]];
 
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
 
-        let amount = 500_000; // Small incentive
+        let amount = 300_000; // Small incentive
 
         mint_to(cpi_ctx, amount)?;
 
